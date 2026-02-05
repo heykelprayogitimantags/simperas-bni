@@ -10,9 +10,9 @@ class AssetModel extends Model
     protected $primaryKey       = 'asset_id';
     protected $useAutoIncrement = true;
     protected $returnType       = 'array';
-    protected $useSoftDeletes   = false;
     protected $protectFields    = true;
-    protected $allowedFields    = [
+
+    protected $allowedFields = [
         'asset_code',
         'asset_type',
         'asset_name',
@@ -27,8 +27,8 @@ class AssetModel extends Model
 
     protected $useTimestamps = true;
     protected $dateFormat    = 'datetime';
-    protected $createdField  = 'created_at';
-    protected $updatedField  = 'updated_at';
+    protected $createdField = 'created_at';
+    protected $updatedField = 'updated_at';
 
     protected $validationRules = [
         'asset_code' => 'required|is_unique[assets.asset_code,asset_id,{asset_id}]',
@@ -51,67 +51,52 @@ class AssetModel extends Model
         ],
     ];
 
+    public function filterAssets($keyword = null, $type = null, $status = null)
+{
+    if ($keyword) {
+        $this->groupStart()
+             ->like('asset_name', $keyword)
+             ->orLike('asset_code', $keyword)
+             ->orLike('brand', $keyword)
+             ->orLike('serial_number', $keyword)
+             ->groupEnd();
+    }
+
+    if ($type) {
+        $this->where('asset_type', $type);
+    }
+
+    if ($status) {
+        $this->where('status', $status);
+    }
+
+    return $this->orderBy('created_at', 'DESC');
+}
+
+
     /**
      * Generate asset code
      */
     public function generateAssetCode($type = 'hardware')
     {
         $prefix = ($type === 'hardware') ? 'HW' : 'SW';
-        $year = date('Y');
-        
-        // Get last number
-        $lastAsset = $this->like('asset_code', $prefix . '-' . $year)
+        $year   = date('Y');
+
+        $lastAsset = $this->builder()
+                          ->like('asset_code', $prefix . '-' . $year)
                           ->orderBy('asset_id', 'DESC')
-                          ->first();
-        
-        if ($lastAsset) {
-            $lastNumber = (int) substr($lastAsset['asset_code'], -3);
-            $newNumber = $lastNumber + 1;
-        } else {
-            $newNumber = 1;
-        }
-        
+                          ->get()
+                          ->getFirstRow('array');
+
+        $newNumber = $lastAsset
+            ? ((int) substr($lastAsset['asset_code'], -3) + 1)
+            : 1;
+
         return $prefix . '-' . $year . '-' . str_pad($newNumber, 3, '0', STR_PAD_LEFT);
     }
 
     /**
-     * Get all assets with pagination
-     */
-    public function getAllAssets($perPage = 10)
-    {
-        return $this->orderBy('created_at', 'DESC')->paginate($perPage);
-    }
-
-    /**
-     * Get assets by type
-     */
-    public function getAssetsByType($type)
-    {
-        return $this->where('asset_type', $type)->findAll();
-    }
-
-    /**
-     * Get assets by status
-     */
-    public function getAssetsByStatus($status)
-    {
-        return $this->where('status', $status)->findAll();
-    }
-
-    /**
-     * Search assets
-     */
-    public function searchAssets($keyword)
-    {
-        return $this->like('asset_name', $keyword)
-                    ->orLike('asset_code', $keyword)
-                    ->orLike('brand', $keyword)
-                    ->orLike('serial_number', $keyword)
-                    ->findAll();
-    }
-
-    /**
-     * Get asset with full details
+     * Asset detail
      */
     public function getAssetDetail($assetId)
     {
@@ -119,15 +104,18 @@ class AssetModel extends Model
     }
 
     /**
-     * Get assets near warranty expiry
+     * Assets near warranty expiry
      */
     public function getAssetsNearWarrantyExpiry($days = 30)
     {
-        $date = date('Y-m-d', strtotime("+{$days} days"));
-        
-        return $this->where('warranty_end_date <=', $date)
+        $dateLimit = date('Y-m-d', strtotime("+{$days} days"));
+
+        return $this->builder()
+                    ->where('warranty_end_date <=', $dateLimit)
                     ->where('warranty_end_date >=', date('Y-m-d'))
                     ->where('status !=', 'retired')
-                    ->findAll();
+                    ->orderBy('warranty_end_date', 'ASC')
+                    ->get()
+                    ->getResultArray();
     }
 }
