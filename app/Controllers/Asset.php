@@ -54,27 +54,6 @@ class Asset extends BaseController
 }
 
 
-
-    /**
-     * Show create form
-     */
-    public function create()
-    {
-        $data = [
-            'title' => 'Tambah Asset',
-            'user' => [
-                'full_name' => $this->session->get('full_name'),
-                'role' => $this->session->get('role'),
-                'department' => $this->session->get('department'),
-            ],
-        ];
-
-        return view('asset/create', $data);
-    }
-
-    /**
-     * Store new asset
-     */
     public function store()
     {
         $validation = \Config\Services::validation();

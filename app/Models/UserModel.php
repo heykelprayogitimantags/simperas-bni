@@ -76,9 +76,37 @@ class UserModel extends Model
         return $data;
     }
 
+    // --- FUNGSI BARU UNTUK SEARCH & FILTER ---
+    
     /**
-     * Verify user credentials
+     * Menangani filter pencarian di halaman index
      */
+    public function filterUsers($keyword = null, $role = null, $status = null)
+    {
+        // Jika ada keyword, cari di kolom nama atau username
+        if ($keyword) {
+            $this->groupStart()
+                 ->like('full_name', $keyword)
+                 ->orLike('username', $keyword)
+                 ->groupEnd();
+        }
+
+        // Filter berdasarkan Role
+        if ($role) {
+            $this->where('role', $role);
+        }
+
+        // Filter berdasarkan Status (1 untuk Aktif, 0 untuk Nonaktif)
+        // Kita cek manual karena 0 dianggap empty oleh PHP
+        if ($status !== null && $status !== '') {
+            $this->where('is_active', $status);
+        }
+
+        return $this; // Mengembalikan object agar bisa disambung paginate()
+    }
+
+    // --- FUNGSI BAWAAN KAMU SEBELUMNYA ---
+
     public function verifyUser($username, $password)
     {
         $user = $this->where('username', $username)
@@ -96,17 +124,11 @@ class UserModel extends Model
         return false;
     }
 
-    /**
-     * Get user by ID
-     */
     public function getUserById($userId)
     {
         return $this->find($userId);
     }
 
-    /**
-     * Get all users by role
-     */
     public function getUsersByRole($role)
     {
         return $this->where('role', $role)
@@ -114,25 +136,16 @@ class UserModel extends Model
                     ->findAll();
     }
 
-    /**
-     * Get active users
-     */
     public function getActiveUsers()
     {
         return $this->where('is_active', true)->findAll();
     }
 
-    /**
-     * Deactivate user
-     */
     public function deactivateUser($userId)
     {
         return $this->update($userId, ['is_active' => false]);
     }
 
-    /**
-     * Activate user
-     */
     public function activateUser($userId)
     {
         return $this->update($userId, ['is_active' => true]);
