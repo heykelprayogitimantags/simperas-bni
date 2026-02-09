@@ -107,7 +107,6 @@
                     <option value="baik" <?= ($status_filter ?? '') === 'baik' ? 'selected' : '' ?>>Baik</option>
                     <option value="rusak_ringan" <?= ($status_filter ?? '') === 'rusak_ringan' ? 'selected' : '' ?>>Rusak Ringan</option>
                     <option value="rusak_berat" <?= ($status_filter ?? '') === 'rusak_berat' ? 'selected' : '' ?>>Rusak Berat</option>
-                    <option value="retired" <?= ($status_filter ?? '') === 'retired' ? 'selected' : '' ?>>Retired</option>
                 </select>
             </div>
 

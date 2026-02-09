@@ -194,7 +194,6 @@
                     <option value="baik" <?= old('status') === 'baik' ? 'selected' : '' ?>>Baik</option>
                     <option value="rusak_ringan" <?= old('status') === 'rusak_ringan' ? 'selected' : '' ?>>Rusak Ringan</option>
                     <option value="rusak_berat" <?= old('status') === 'rusak_berat' ? 'selected' : '' ?>>Rusak Berat</option>
-                    <option value="retired" <?= old('status') === 'retired' ? 'selected' : '' ?>>Retired</option>
                 </select>
             </div>
 

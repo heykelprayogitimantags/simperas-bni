@@ -88,7 +88,7 @@ class Asset extends BaseController
             'purchase_date' => 'permit_empty|valid_date',
             'warranty_end_date' => 'permit_empty|valid_date',
             'location' => 'permit_empty|max_length[100]',
-            'status' => 'required|in_list[baik,rusak_ringan,rusak_berat,retired]',
+            'status' => 'required|in_list[baik,rusak_ringan,rusak_berat]',
             'specifications' => 'permit_empty',
         ];
 
