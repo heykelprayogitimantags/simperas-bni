@@ -91,5 +91,4 @@ $routes->group('', ['filter' => 'auth'], function($routes) {
     $routes->get('maintenance', 'Report::maintenance');
     $routes->get('tickets', 'Report::tickets');
 });
-
 });

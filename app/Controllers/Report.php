@@ -66,7 +66,8 @@ class Report extends BaseController
             $builder->where('asset_type', $type);
         }
         
-        $assets = $builder->orderBy('asset_code', 'ASC')->findAll();
+        // PERBAIKAN: Builder menggunakan get()->getResultArray()
+        $assets = $builder->orderBy('asset_code', 'ASC')->get()->getResultArray();
         
         if ($format === 'excel') {
             return $this->exportAssetsExcel($assets);
@@ -99,7 +100,8 @@ class Report extends BaseController
             $builder->where('maintenance_logs.technician_id', $technicianId);
         }
         
-        $logs = $builder->orderBy('maintenance_logs.created_at', 'DESC')->findAll();
+        // PERBAIKAN: Builder menggunakan get()->getResultArray()
+        $logs = $builder->orderBy('maintenance_logs.created_at', 'DESC')->get()->getResultArray();
         
         // Calculate summary
         $totalCost = 0;
@@ -157,7 +159,8 @@ class Report extends BaseController
             $builder->where('tickets.priority', $priority);
         }
         
-        $tickets = $builder->orderBy('tickets.created_at', 'DESC')->findAll();
+        // PERBAIKAN: Builder menggunakan get()->getResultArray()
+        $tickets = $builder->orderBy('tickets.created_at', 'DESC')->get()->getResultArray();
         
         // Calculate summary
         $summary = [
@@ -171,8 +174,8 @@ class Report extends BaseController
         ];
         
         foreach ($tickets as $ticket) {
-            $summary[$ticket['status']]++;
-            $summary[$ticket['priority'] . '_priority']++;
+            if(isset($summary[$ticket['status']])) $summary[$ticket['status']]++;
+            if(isset($summary[$ticket['priority'] . '_priority'])) $summary[$ticket['priority'] . '_priority']++;
         }
         
         if ($format === 'excel') {
@@ -187,34 +190,23 @@ class Report extends BaseController
      */
     private function exportAssetsPDF($assets)
     {
-        // Load TCPDF library
         $pdf = new \TCPDF('L', 'mm', 'A4', true, 'UTF-8');
-        
-        // Set document information
         $pdf->SetCreator('PT BNI - Sistem Maintenance');
         $pdf->SetAuthor('Admin');
         $pdf->SetTitle('Laporan Asset');
-        
-        // Remove default header/footer
         $pdf->setPrintHeader(false);
         $pdf->setPrintFooter(false);
-        
-        // Add a page
         $pdf->AddPage();
         
-        // Set font
         $pdf->SetFont('helvetica', 'B', 16);
-        
-        // Title
         $pdf->Cell(0, 10, 'LAPORAN ASSET', 0, 1, 'C');
         $pdf->SetFont('helvetica', '', 10);
         $pdf->Cell(0, 5, 'PT Bank Negara Indonesia (Persero) Tbk', 0, 1, 'C');
         $pdf->Cell(0, 5, 'Tanggal: ' . date('d F Y'), 0, 1, 'C');
         $pdf->Ln(5);
         
-        // Table header
         $pdf->SetFont('helvetica', 'B', 9);
-        $pdf->SetFillColor(255, 127, 0); // Orange
+        $pdf->SetFillColor(255, 127, 0); 
         $pdf->SetTextColor(255, 255, 255);
         $pdf->Cell(30, 7, 'Kode Asset', 1, 0, 'C', 1);
         $pdf->Cell(60, 7, 'Nama Asset', 1, 0, 'C', 1);
@@ -223,7 +215,6 @@ class Report extends BaseController
         $pdf->Cell(50, 7, 'Lokasi', 1, 0, 'C', 1);
         $pdf->Cell(25, 7, 'Status', 1, 1, 'C', 1);
         
-        // Table data
         $pdf->SetFont('helvetica', '', 8);
         $pdf->SetTextColor(0, 0, 0);
         
@@ -239,14 +230,13 @@ class Report extends BaseController
             $fill = !$fill;
         }
         
-        // Summary
         $pdf->Ln(5);
         $pdf->SetFont('helvetica', 'B', 10);
         $pdf->Cell(0, 6, 'Total Asset: ' . count($assets), 0, 1, 'R');
         
-        // Output PDF
         $filename = 'Laporan_Asset_' . date('Y-m-d_His') . '.pdf';
         $pdf->Output($filename, 'D');
+        exit;
     }
 
     /**
@@ -257,7 +247,6 @@ class Report extends BaseController
         $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
         $sheet = $spreadsheet->getActiveSheet();
         
-        // Set title
         $sheet->setCellValue('A1', 'LAPORAN ASSET');
         $sheet->mergeCells('A1:G1');
         $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(16);
@@ -271,7 +260,6 @@ class Report extends BaseController
         $sheet->mergeCells('A3:G3');
         $sheet->getStyle('A3')->getAlignment()->setHorizontal('center');
         
-        // Header row
         $sheet->setCellValue('A5', 'Kode Asset');
         $sheet->setCellValue('B5', 'Nama Asset');
         $sheet->setCellValue('C5', 'Tipe');
@@ -280,7 +268,6 @@ class Report extends BaseController
         $sheet->setCellValue('F5', 'Lokasi');
         $sheet->setCellValue('G5', 'Status');
         
-        // Style header
         $headerStyle = [
             'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
             'fill' => ['fillType' => 'solid', 'startColor' => ['rgb' => 'FF7F00']],
@@ -288,7 +275,6 @@ class Report extends BaseController
         ];
         $sheet->getStyle('A5:G5')->applyFromArray($headerStyle);
         
-        // Data rows
         $row = 6;
         foreach ($assets as $asset) {
             $sheet->setCellValue('A' . $row, $asset['asset_code']);
@@ -301,24 +287,16 @@ class Report extends BaseController
             $row++;
         }
         
-        // Auto-size columns
         foreach (range('A', 'G') as $col) {
             $sheet->getColumnDimension($col)->setAutoSize(true);
         }
         
-        // Add border
         $sheet->getStyle('A5:G' . ($row - 1))->applyFromArray([
             'borders' => [
                 'allBorders' => ['borderStyle' => 'thin', 'color' => ['rgb' => '000000']],
             ],
         ]);
         
-        // Summary
-        $sheet->setCellValue('F' . ($row + 1), 'Total Asset:');
-        $sheet->setCellValue('G' . ($row + 1), count($assets));
-        $sheet->getStyle('F' . ($row + 1) . ':G' . ($row + 1))->getFont()->setBold(true);
-        
-        // Save file
         $filename = 'Laporan_Asset_' . date('Y-m-d_His') . '.xlsx';
         $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
         
@@ -330,20 +308,125 @@ class Report extends BaseController
         exit;
     }
 
-    /**
-     * Export Maintenance to PDF
-     */
+        private function exportMaintenanceExcel($logs, $summary)
+        {
+            $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+            $sheet = $spreadsheet->getActiveSheet();
+            
+            // Header Info
+            $sheet->setCellValue('A1', 'LAPORAN MAINTENANCE ASET');
+            $sheet->mergeCells('A1:F1');
+            $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(14);
+            
+            $sheet->setCellValue('A2', 'Periode: ' . ($summary['start_date'] ?? '-') . ' s/d ' . ($summary['end_date'] ?? '-'));
+            
+            // Table Header
+            $headerRow = 4;
+            $sheet->setCellValue('A'.$headerRow, 'Tanggal');
+            $sheet->setCellValue('B'.$headerRow, 'Kode Asset');
+            $sheet->setCellValue('C'.$headerRow, 'Nama Asset');
+            $sheet->setCellValue('D'.$headerRow, 'Teknisi');
+            $sheet->setCellValue('E'.$headerRow, 'Diagnosis');
+            $sheet->setCellValue('F'.$headerRow, 'Biaya');
+
+            $sheet->getStyle('A'.$headerRow.':F'.$headerRow)->getFont()->setBold(true);
+
+            // Data
+            $row = 5;
+            foreach ($logs as $log) {
+                $sheet->setCellValue('A' . $row, date('d/m/Y', strtotime($log['created_at'])));
+                $sheet->setCellValue('B' . $row, $log['asset_code']);
+                $sheet->setCellValue('C' . $row, $log['asset_name']);
+                $sheet->setCellValue('D' . $row, $log['technician_name']);
+                $sheet->setCellValue('E' . $row, $log['diagnosis']);
+                $sheet->setCellValue('F' . $row, $log['cost']);
+                $row++;
+            }
+
+            $filename = 'Laporan_Maintenance_' . date('Ymd') . '.xlsx';
+            header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+            header('Content-Disposition: attachment;filename="' . $filename . '"');
+            $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
+            $writer->save('php://output');
+            exit;
+        }
+
+        private function exportTicketsPDF($tickets, $summary)
+        {
+            $pdf = new \TCPDF('L', 'mm', 'A4', true, 'UTF-8');
+            $pdf->SetTitle('Laporan Tiket');
+            $pdf->setPrintHeader(false);
+            $pdf->AddPage();
+            
+            $pdf->SetFont('helvetica', 'B', 14);
+            $pdf->Cell(0, 10, 'LAPORAN TIKET KERUSAKAN', 0, 1, 'C');
+            $pdf->Ln(5);
+
+            // Header Tabel
+            $pdf->SetFont('helvetica', 'B', 10);
+            $pdf->Cell(30, 7, 'Tgl Lapor', 1);
+            $pdf->Cell(40, 7, 'Asset', 1);
+            $pdf->Cell(80, 7, 'Masalah', 1);
+            $pdf->Cell(30, 7, 'Prioritas', 1);
+            $pdf->Cell(30, 7, 'Status', 1);
+            $pdf->Cell(40, 7, 'Pelapor', 1, 1);
+
+            // Isi Tabel
+            $pdf->SetFont('helvetica', '', 9);
+            foreach ($tickets as $ticket) {
+                $pdf->Cell(30, 6, date('d/m/Y', strtotime($ticket['created_at'])), 1);
+                $pdf->Cell(40, 6, $ticket['asset_code'], 1);
+                $pdf->Cell(80, 6, substr($ticket['issue_description'], 0, 45), 1);
+                $pdf->Cell(30, 6, ucfirst($ticket['priority']), 1);
+                $pdf->Cell(30, 6, ucfirst($ticket['status']), 1);
+                $pdf->Cell(40, 6, $ticket['reporter_name'], 1, 1);
+            }
+
+            $pdf->Output('Laporan_Tiket.pdf', 'D');
+            exit;
+        }
+
+        private function exportTicketsExcel($tickets, $summary)
+        {
+            $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+            $sheet = $spreadsheet->getActiveSheet();
+            
+            $sheet->setCellValue('A1', 'DAFTAR TIKET MASALAH');
+            $sheet->setCellValue('A3', 'Total Tiket: ' . $summary['total_tickets']);
+
+            $sheet->setCellValue('A5', 'Tanggal');
+            $sheet->setCellValue('B5', 'Asset');
+            $sheet->setCellValue('C5', 'Deskripsi Masalah');
+            $sheet->setCellValue('D5', 'Prioritas');
+            $sheet->setCellValue('E5', 'Status');
+
+            $row = 6;
+            foreach ($tickets as $ticket) {
+                $sheet->setCellValue('A' . $row, $ticket['created_at']);
+                $sheet->setCellValue('B' . $row, $ticket['asset_name']);
+                $sheet->setCellValue('C' . $row, $ticket['issue_description']);
+                $sheet->setCellValue('D' . $row, $ticket['priority']);
+                $sheet->setCellValue('E' . $row, $ticket['status']);
+                $row++;
+            }
+
+            header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+            header('Content-Disposition: attachment;filename="Laporan_Tiket.xlsx"');
+            $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
+            $writer->save('php://output');
+            exit;
+        }
+
+
     private function exportMaintenancePDF($logs, $summary)
     {
         $pdf = new \TCPDF('L', 'mm', 'A4', true, 'UTF-8');
-        
         $pdf->SetCreator('PT BNI - Sistem Maintenance');
         $pdf->SetTitle('Laporan Maintenance');
         $pdf->setPrintHeader(false);
         $pdf->setPrintFooter(false);
         $pdf->AddPage();
         
-        // Title
         $pdf->SetFont('helvetica', 'B', 16);
         $pdf->Cell(0, 10, 'LAPORAN MAINTENANCE', 0, 1, 'C');
         $pdf->SetFont('helvetica', '', 10);
@@ -355,14 +438,12 @@ class Report extends BaseController
         
         $pdf->Ln(5);
         
-        // Summary Box
         $pdf->SetFillColor(240, 240, 240);
         $pdf->Cell(90, 6, 'Total Perbaikan: ' . $summary['total_records'], 1, 0, 'L', 1);
         $pdf->Cell(90, 6, 'Total Biaya: Rp ' . number_format($summary['total_cost'], 0, ',', '.'), 1, 0, 'L', 1);
         $pdf->Cell(90, 6, 'Total Durasi: ' . round($summary['total_duration']) . ' menit', 1, 1, 'L', 1);
         $pdf->Ln(3);
         
-        // Table header
         $pdf->SetFont('helvetica', 'B', 8);
         $pdf->SetFillColor(255, 127, 0);
         $pdf->SetTextColor(255, 255, 255);
@@ -373,7 +454,6 @@ class Report extends BaseController
         $pdf->Cell(65, 7, 'Action', 1, 0, 'C', 1);
         $pdf->Cell(25, 7, 'Biaya', 1, 1, 'C', 1);
         
-        // Table data
         $pdf->SetFont('helvetica', '', 7);
         $pdf->SetTextColor(0, 0, 0);
         
@@ -383,40 +463,17 @@ class Report extends BaseController
             $pdf->Cell(25, 6, date('d/m/Y', strtotime($log['created_at'])), 1, 0, 'C', $fill);
             $pdf->Cell(40, 6, substr($log['asset_name'], 0, 20), 1, 0, 'L', $fill);
             $pdf->Cell(35, 6, substr($log['technician_name'], 0, 18), 1, 0, 'L', $fill);
-            $pdf->Cell(65, 6, substr($log['diagnosis'], 0, 40), 1, 0, 'L', $fill);
-            $pdf->Cell(65, 6, substr($log['action_taken'], 0, 40), 1, 0, 'L', $fill);
+            $pdf->Cell(65, 6, substr($log['diagnosis'] ?? '-', 0, 40), 1, 0, 'L', $fill);
+            $pdf->Cell(65, 6, substr($log['action_taken'] ?? '-', 0, 40), 1, 0, 'L', $fill);
             $pdf->Cell(25, 6, number_format($log['cost'] ?? 0, 0), 1, 1, 'R', $fill);
             $fill = !$fill;
         }
         
         $filename = 'Laporan_Maintenance_' . date('Y-m-d_His') . '.pdf';
         $pdf->Output($filename, 'D');
+        exit;
     }
 
-    /**
-     * Export Maintenance to Excel (similar structure)
-     */
-    private function exportMaintenanceExcel($logs, $summary)
-    {
-        // Implementation similar to exportAssetsExcel
-        // ... (code implementation)
-    }
-
-    /**
-     * Export Tickets to PDF (similar structure)
-     */
-    private function exportTicketsPDF($tickets, $summary)
-    {
-        // Implementation similar to exportMaintenancePDF
-        // ... (code implementation)
-    }
-
-    /**
-     * Export Tickets to Excel (similar structure)
-     */
-    private function exportTicketsExcel($tickets, $summary)
-    {
-        // Implementation similar to exportAssetsExcel
-        // ... (code implementation)
-    }
+    // Catatan: Fungsi export lainnya (Excel maintenance, PDF ticket, dll) 
+    // dapat mengikuti pola yang sama dengan exportAssetsPDF/Excel di atas.
 }
