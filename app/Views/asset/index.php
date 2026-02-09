@@ -206,7 +206,8 @@
         <!-- Pagination -->
         <?php if (!empty($assets)): ?>
             <div class="bg-gray-50 px-6 py-4 border-t border-gray-200">
-                <?= $pager->links('default', 'default_full') ?>
+              <?= $pager->links('assets', 'tailwind_pagination') ?>
+
             </div>
         <?php endif; ?>
     </div>

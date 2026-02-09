@@ -17,47 +17,69 @@ class Asset extends BaseController
     }
 
     /**
-     * Display asset list
+     * ============================
+     * LIST ASSET
+     * ============================
      */
-   public function index()
-{
-    $keyword = $this->request->getGet('keyword');
-    $type    = $this->request->getGet('type');
-    $status  = $this->request->getGet('status');
+    public function index()
+    {
+        $keyword = $this->request->getGet('keyword');
+        $type    = $this->request->getGet('type');
+        $status  = $this->request->getGet('status');
 
-    $assets = $this->assetModel
-                   ->filterAssets($keyword, $type, $status)
-                   ->paginate(10);
+        $assets = $this->assetModel
+            ->filterAssets($keyword, $type, $status)
+            ->paginate(10, 'assets');
 
-    $data = [
-        'title' => 'Kelola Asset',
-        'user' => [
-            'full_name' => $this->session->get('full_name'),
-            'role' => $this->session->get('role'),
-            'department' => $this->session->get('department'),
-        ],
+        $data = [
+            'title' => 'Kelola Asset',
+            'user' => [
+                'full_name'  => $this->session->get('full_name'),
+                'role'       => $this->session->get('role'),
+                'department' => $this->session->get('department'),
+            ],
+            'assets' => $assets,
+            'pager'  => $this->assetModel->pager,
 
-        'assets' => $assets,
-        'pager'  => $this->assetModel->pager,
+            'keyword' => $keyword,
+            'type_filter' => $type,
+            'status_filter' => $status,
 
-        'keyword' => $keyword,
-        'type_filter' => $type,
-        'status_filter' => $status,
+            // Statistik
+            'total_assets'   => $this->assetModel->countAll(),
+            'total_hardware' => $this->assetModel->where('asset_type', 'hardware')->countAllResults(),
+            'total_software' => $this->assetModel->where('asset_type', 'software')->countAllResults(),
+        ];
 
-        // statistics (AMAN karena query baru)
-        'total_assets'   => $this->assetModel->countAll(),
-        'total_hardware' => $this->assetModel->where('asset_type', 'hardware')->countAllResults(),
-        'total_software' => $this->assetModel->where('asset_type', 'software')->countAllResults(),
-    ];
+        return view('asset/index', $data);
+    }
 
-    return view('asset/index', $data);
-}
+    /**
+     * ============================
+     * FORM TAMBAH ASSET (FIX ERROR)
+     * ============================
+     */
+    public function create()
+    {
+        $data = [
+            'title' => 'Tambah Asset',
+            'user' => [
+                'full_name'  => $this->session->get('full_name'),
+                'role'       => $this->session->get('role'),
+                'department' => $this->session->get('department'),
+            ],
+        ];
 
+        return view('asset/create', $data);
+    }
 
+    /**
+     * ============================
+     * SIMPAN ASSET
+     * ============================
+     */
     public function store()
     {
-        $validation = \Config\Services::validation();
-
         $rules = [
             'asset_type' => 'required|in_list[hardware,software]',
             'asset_name' => 'required|min_length[3]|max_length[100]',
@@ -72,11 +94,10 @@ class Asset extends BaseController
 
         if (!$this->validate($rules)) {
             return redirect()->back()
-                           ->withInput()
-                           ->with('errors', $validation->getErrors());
+                ->withInput()
+                ->with('errors', $this->validator->getErrors());
         }
 
-        // Generate asset code
         $assetType = $this->request->getPost('asset_type');
         $assetCode = $this->assetModel->generateAssetCode($assetType);
 
@@ -93,37 +114,33 @@ class Asset extends BaseController
             'specifications' => $this->request->getPost('specifications'),
         ];
 
-        if ($this->assetModel->insert($data)) {
-            return redirect()->to('/asset')
-                           ->with('success', 'Asset berhasil ditambahkan dengan kode: ' . $assetCode);
-        } else {
-            return redirect()->back()
-                           ->withInput()
-                           ->with('error', 'Gagal menambahkan asset');
-        }
+        $this->assetModel->insert($data);
+
+        return redirect()->to('/asset')
+            ->with('success', 'Asset berhasil ditambahkan dengan kode: ' . $assetCode);
     }
 
     /**
-     * Show asset detail
+     * ============================
+     * DETAIL ASSET
+     * ============================
      */
     public function detail($id)
     {
         $asset = $this->assetModel->find($id);
 
         if (!$asset) {
-            return redirect()->to('/asset')
-                           ->with('error', 'Asset tidak ditemukan');
+            return redirect()->to('/asset')->with('error', 'Asset tidak ditemukan');
         }
 
-        // Get maintenance history for this asset
         $maintenanceLogModel = new \App\Models\MaintenanceLogModel();
         $maintenanceLogs = $maintenanceLogModel->getLogsByAsset($id);
 
         $data = [
             'title' => 'Detail Asset',
             'user' => [
-                'full_name' => $this->session->get('full_name'),
-                'role' => $this->session->get('role'),
+                'full_name'  => $this->session->get('full_name'),
+                'role'       => $this->session->get('role'),
                 'department' => $this->session->get('department'),
             ],
             'asset' => $asset,
@@ -134,22 +151,23 @@ class Asset extends BaseController
     }
 
     /**
-     * Show edit form
+     * ============================
+     * FORM EDIT
+     * ============================
      */
     public function edit($id)
     {
         $asset = $this->assetModel->find($id);
 
         if (!$asset) {
-            return redirect()->to('/asset')
-                           ->with('error', 'Asset tidak ditemukan');
+            return redirect()->to('/asset')->with('error', 'Asset tidak ditemukan');
         }
 
         $data = [
             'title' => 'Edit Asset',
             'user' => [
-                'full_name' => $this->session->get('full_name'),
-                'role' => $this->session->get('role'),
+                'full_name'  => $this->session->get('full_name'),
+                'role'       => $this->session->get('role'),
                 'department' => $this->session->get('department'),
             ],
             'asset' => $asset,
@@ -159,18 +177,15 @@ class Asset extends BaseController
     }
 
     /**
-     * Update asset
+     * ============================
+     * UPDATE ASSET
+     * ============================
      */
     public function update($id)
     {
-        $asset = $this->assetModel->find($id);
-
-        if (!$asset) {
-            return redirect()->to('/asset')
-                           ->with('error', 'Asset tidak ditemukan');
+        if (!$this->assetModel->find($id)) {
+            return redirect()->to('/asset')->with('error', 'Asset tidak ditemukan');
         }
-
-        $validation = \Config\Services::validation();
 
         $rules = [
             'asset_name' => 'required|min_length[3]|max_length[100]',
@@ -185,8 +200,8 @@ class Asset extends BaseController
 
         if (!$this->validate($rules)) {
             return redirect()->back()
-                           ->withInput()
-                           ->with('errors', $validation->getErrors());
+                ->withInput()
+                ->with('errors', $this->validator->getErrors());
         }
 
         $data = [
@@ -200,48 +215,40 @@ class Asset extends BaseController
             'specifications' => $this->request->getPost('specifications'),
         ];
 
-        if ($this->assetModel->update($id, $data)) {
-            return redirect()->to('/asset/detail/' . $id)
-                           ->with('success', 'Asset berhasil diperbarui');
-        } else {
-            return redirect()->back()
-                           ->withInput()
-                           ->with('error', 'Gagal memperbarui asset');
-        }
+        $this->assetModel->update($id, $data);
+
+        return redirect()->to('/asset/detail/' . $id)
+            ->with('success', 'Asset berhasil diperbarui');
     }
 
     /**
-     * Delete asset
+     * ============================
+     * HAPUS ASSET
+     * ============================
      */
     public function delete($id)
     {
-        $asset = $this->assetModel->find($id);
-
-        if (!$asset) {
-            return redirect()->to('/asset')
-                           ->with('error', 'Asset tidak ditemukan');
+        if (!$this->assetModel->find($id)) {
+            return redirect()->to('/asset')->with('error', 'Asset tidak ditemukan');
         }
 
-        // Check if asset has related tickets
         $ticketModel = new \App\Models\TicketModel();
         $hasTickets = $ticketModel->where('asset_id', $id)->countAllResults() > 0;
 
         if ($hasTickets) {
             return redirect()->to('/asset')
-                           ->with('error', 'Asset tidak dapat dihapus karena memiliki tiket terkait. Gunakan status "Retired" sebagai gantinya.');
+                ->with('error', 'Asset tidak dapat dihapus karena memiliki tiket terkait');
         }
 
-        if ($this->assetModel->delete($id)) {
-            return redirect()->to('/asset')
-                           ->with('success', 'Asset berhasil dihapus');
-        } else {
-            return redirect()->to('/asset')
-                           ->with('error', 'Gagal menghapus asset');
-        }
+        $this->assetModel->delete($id);
+
+        return redirect()->to('/asset')->with('success', 'Asset berhasil dihapus');
     }
 
     /**
-     * Get asset data (AJAX)
+     * ============================
+     * AJAX GET ASSET
+     * ============================
      */
     public function getAsset($id)
     {
@@ -261,12 +268,13 @@ class Asset extends BaseController
     }
 
     /**
-     * Export to Excel (akan dibuat nanti)
+     * ============================
+     * EXPORT (COMING SOON)
+     * ============================
      */
     public function export()
     {
-        // TODO: Implement export functionality
         return redirect()->to('/asset')
-                       ->with('info', 'Fitur export akan segera tersedia');
+            ->with('info', 'Fitur export akan segera tersedia');
     }
 }
