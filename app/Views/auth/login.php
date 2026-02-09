@@ -129,14 +129,6 @@
             margin-bottom: 12px;
         }
 
-        .divider {
-            width: 60px;
-            height: 3px;
-            background: rgba(255, 255, 255, 0.4);
-            border-radius: 10px;
-            margin: 0 auto 16px;
-        }
-
         .card-header p {
             font-size: 14px;
             line-height: 1.6;
