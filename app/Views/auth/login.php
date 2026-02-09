@@ -59,10 +59,10 @@
             background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
         }
 
-        /* Logo container */
+        /* Logo container - FIXED */
         .logo-container {
-            width: 120px;
-            height: 120px;
+            width: 150px;
+            height: 150px;
             background: white;
             border-radius: 20px;
             display: flex;
@@ -70,11 +70,12 @@
             justify-content: center;
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
             margin: 0 auto;
+            padding: 20px;
         }
 
         .logo-container img {
-            max-width: 90%;
-            max-height: 90%;
+            width: 100%;
+            height: 100%;
             object-fit: contain;
         }
 
@@ -112,20 +113,19 @@
 </head>
 <body class="min-h-screen flex items-center justify-center p-4">
     
-        <div class="w-full max-w-md fade-in">
-            <!-- Logo Container -->
-            <div class="text-center mb-6">
-                <div class="logo-container">
-        <img src="<?= base_url('asset/images/Logo.png') ?>" alt="Logo SIMPERAS" class="mx-auto h-24 w-auto mb-4">
-        <i class="fas fa-tools text-6xl text-orange-500 hidden"></i>
-        </div>
-                <h2 class="mt-6 text-white text-2xl font-bold">
-                    SIMPERAS
-                </h2>
-                <p class="text-orange-50 text-sm mt-1">
-                    Sistem Informasi Manajemen Perawatan & Aset
-                </p>
+    <div class="w-full max-w-md fade-in">
+        <!-- Logo Container -->
+        <div class="text-center mb-6">
+            <div class="logo-container">
+                <img src="<?= base_url('assets/images/Logo.png') ?>" alt="Logo SIMPERAS">
             </div>
+            <h2 class="mt-6 text-white text-2xl font-bold">
+                SIMPERAS
+            </h2>
+            <p class="text-orange-50 text-sm mt-1">
+                Sistem Informasi Manajemen Perawatan & Aset
+            </p>
+        </div>
 
         <!-- Login Card -->
         <div class="login-card overflow-hidden">
@@ -135,7 +135,7 @@
                 <h1 class="text-xl font-bold mb-1">Selamat Datang</h1>
                 <div class="w-12 h-0.5 bg-white/50 mx-auto my-2 rounded-full"></div>
                 <p class="text-orange-50 text-sm">PT Bank Negara Indonesia (Persero) Tbk</p>
-                <p class="text-orange-100/80 text-xs mt-0.5"> Unit Logistics & Human Capital </p>
+                <p class="text-orange-100/80 text-xs mt-0.5">Unit Logistics & Human Capital</p>
             </div>
 
             <!-- Form -->
@@ -255,21 +255,6 @@
                     </button>
 
                 </form>
-
-                <!-- Divider -->
-                <div class="relative my-6">
-                    <div class="absolute inset-0 flex items-center">
-                        <div class="w-full border-t border-gray-200"></div>
-                    </div>
-                    <div class="relative flex justify-center text-sm">
-                        <span class="px-3 bg-white text-gray-500">
-                            <i class="fas fa-shield-alt mr-1 text-orange-500"></i>
-                            Login Aman & Terenkripsi
-                        </span>
-                    </div>
-                </div>
-
-                <!-- System Info -->
                 <div class="space-y-3">
                     <div class="bg-orange-50 border border-orange-200 rounded-lg p-4">
                         <div class="flex items-start space-x-3">
@@ -282,31 +267,12 @@
                                 <h4 class="text-sm font-semibold text-orange-900 mb-1">Informasi Sistem</h4>
                                 <p class="text-xs text-orange-700 leading-relaxed">
                                     Gunakan kredensial yang telah diberikan oleh administrator sistem. 
-                                    Untuk bantuan, hubungi IT Support di ext. 1234.
+                                    Untuk bantuan, hubungi IT Support di ext219.
                                 </p>
                             </div>
                         </div>
                     </div>
-
-                    <!-- Security Notice -->
-                    <div class="flex items-center justify-center space-x-4 text-xs text-gray-500">
-                        <div class="flex items-center space-x-1">
-                            <i class="fas fa-lock text-green-500"></i>
-                            <span>SSL Encrypted</span>
-                        </div>
-                        <span>•</span>
-                        <div class="flex items-center space-x-1">
-                            <i class="fas fa-shield-alt text-blue-500"></i>
-                            <span>Protected</span>
-                        </div>
-                        <span>•</span>
-                        <div class="flex items-center space-x-1">
-                            <i class="fas fa-check-circle text-orange-500"></i>
-                            <span>Verified</span>
-                        </div>
-                    </div>
                 </div>
-
             </div>
         </div>
 
@@ -319,21 +285,8 @@
                 </p>
             </div>
             <p class="text-xs text-orange-100">
-                All Rights Reserved • Secure Login Portal v1.0
+                All Rights Reserved • Secure Login Portal V001
             </p>
-            <div class="flex items-center justify-center space-x-3 text-xs text-orange-100">
-                <a href="#" class="hover:text-white hover:underline">
-                    <i class="fas fa-book mr-1"></i>Panduan
-                </a>
-                <span>•</span>
-                <a href="#" class="hover:text-white hover:underline">
-                    <i class="fas fa-headset mr-1"></i>Support
-                </a>
-                <span>•</span>
-                <a href="#" class="hover:text-white hover:underline">
-                    <i class="fas fa-file-contract mr-1"></i>Privacy
-                </a>
-            </div>
         </div>
     </div>
 
