@@ -408,19 +408,17 @@ const assetCtx = document.getElementById('assetStatusChart').getContext('2d');
 const assetChart = new Chart(assetCtx, {
     type: 'doughnut',
     data: {
-        labels: ['Baik', 'Rusak Ringan', 'Rusak Berat', 'Retired'],
+        labels: ['Baik', 'Rusak Ringan', 'Rusak Berat',],
         datasets: [{
             data: [
                 <?= $asset_by_status['baik'] ?>,
                 <?= $asset_by_status['rusak_ringan'] ?>,
                 <?= $asset_by_status['rusak_berat'] ?>,
-                <?= $asset_by_status['retired'] ?>
             ],
             backgroundColor: [
                 '#10b981',
                 '#f59e0b',
                 '#ef4444',
-                '#6b7280'
             ],
             borderWidth: 3,
             borderColor: '#ffffff',

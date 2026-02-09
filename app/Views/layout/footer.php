@@ -69,7 +69,7 @@
                                 <div class="bg-white/20 backdrop-blur-sm rounded-lg p-2 mr-3">
                                     <i class="fas fa-phone text-white text-xs"></i>
                                 </div>
-                                <span>021-2xxx-xxxx</span>
+                                <span>(061) 6871382</span>
                             </li>
                             <li class="flex items-center justify-center md:justify-start text-orange-50 text-sm">
                                 <div class="bg-white/20 backdrop-blur-sm rounded-lg p-2 mr-3">

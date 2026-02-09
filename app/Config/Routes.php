@@ -84,4 +84,12 @@ $routes->group('', ['filter' => 'auth'], function($routes) {
     $routes->get('profile', 'Profile::index');
     $routes->post('profile/update', 'Profile::update');
     $routes->post('profile/change-password', 'Profile::changePassword');
+
+    $routes->group('report', ['filter' => 'auth:admin'], function($routes) {
+    $routes->get('/', 'Report::index');
+    $routes->get('assets', 'Report::assets');
+    $routes->get('maintenance', 'Report::maintenance');
+    $routes->get('tickets', 'Report::tickets');
+});
+
 });
