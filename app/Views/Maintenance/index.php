@@ -37,7 +37,7 @@
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-green-100 text-sm">Bulan Ini</p>
-                    <h3 class="text-3xl font-bold mt-1"><?= $this_month ?></h3>
+                    <h3 class="text-3xl font-bold mt-1"><?= $monthly_logs ?></h3>
                     <p class="text-green-100 text-xs mt-1"><?= date('F Y') ?></p>
                 </div>
                 <i class="fas fa-calendar-check text-4xl opacity-50"></i>
@@ -48,7 +48,7 @@
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-orange-100 text-sm">Total Biaya Bulan Ini</p>
-                    <h3 class="text-2xl font-bold mt-1">Rp <?= number_format($total_cost, 0, ',', '.') ?></h3>
+                    <h3 class="text-2xl font-bold mt-1">Rp <?= number_format($monthly_cost, 0, ',', '.') ?></h3>
                     <p class="text-orange-100 text-xs mt-1">Maintenance cost</p>
                 </div>
                 <i class="fas fa-money-bill-wave text-4xl opacity-50"></i>

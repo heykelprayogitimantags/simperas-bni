@@ -44,6 +44,12 @@ $routes->group('', ['filter' => 'auth'], function($routes) {
         $routes->post('store', 'Ticket::store');
         $routes->get('detail/(:num)', 'Ticket::detail/$1');
         $routes->get('my-tickets', 'Ticket::myTickets'); // For pegawai
+        
+        // ⭐ TAMBAHKAN INI - Update status (Admin/Teknisi only)
+        $routes->post('update-status/(:num)', 'Ticket::updateStatus/$1', ['filter' => 'auth:admin,teknisi']);
+        
+        // Delete ticket (Admin only)
+        $routes->get('delete/(:num)', 'Ticket::delete/$1', ['filter' => 'auth:admin']);
     });
     
     // Maintenance (Teknisi only)
@@ -66,6 +72,9 @@ $routes->group('', ['filter' => 'auth'], function($routes) {
     // Report (Admin only)
     $routes->group('report', ['filter' => 'auth:admin'], function($routes) {
         $routes->get('/', 'Report::index');
+        $routes->get('assets', 'Report::assets');
+        $routes->get('maintenance', 'Report::maintenance');
+        $routes->get('tickets', 'Report::tickets');
         $routes->post('generate', 'Report::generate');
         $routes->get('export/(:any)', 'Report::export/$1');
     });
@@ -79,16 +88,10 @@ $routes->group('', ['filter' => 'auth'], function($routes) {
         $routes->post('update/(:num)', 'User::update/$1');
         $routes->get('toggle-status/(:num)', 'User::toggleStatus/$1');
     });
-    
+    $routes->get('maintenance/history', 'Maintenance::history');
+
     // Profile
     $routes->get('profile', 'Profile::index');
     $routes->post('profile/update', 'Profile::update');
     $routes->post('profile/change-password', 'Profile::changePassword');
-
-    $routes->group('report', ['filter' => 'auth:admin'], function($routes) {
-    $routes->get('/', 'Report::index');
-    $routes->get('assets', 'Report::assets');
-    $routes->get('maintenance', 'Report::maintenance');
-    $routes->get('tickets', 'Report::tickets');
-});
 });

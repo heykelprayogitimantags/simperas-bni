@@ -36,35 +36,69 @@ class Maintenance extends BaseController
         $keyword = $this->request->getGet('keyword');
         $month   = $this->request->getGet('month') ?: date('Y-m');
 
-        $builder = $this->maintenanceLogModel->builder();
-        $builder->select('maintenance_logs.*, assets.asset_name, assets.asset_code, users.full_name as technician_name')
-                ->join('assets', 'assets.asset_id = maintenance_logs.asset_id')
-                ->join('users', 'users.user_id = maintenance_logs.technician_id');
+        // ⭐ PERBAIKAN: JOIN langsung ke assets (sesuai struktur DB)
+        $this->maintenanceLogModel
+            ->select('maintenance_logs.*, 
+                     assets.asset_name, 
+                     assets.asset_code,
+                     tickets.ticket_number,
+                     users.full_name as technician_name')
+            ->join('assets', 'assets.asset_id = maintenance_logs.asset_id', 'left')
+            ->join('tickets', 'tickets.ticket_id = maintenance_logs.ticket_id', 'left')
+            ->join('users', 'users.user_id = maintenance_logs.technician_id', 'left')
+            ->orderBy('maintenance_logs.created_at', 'DESC');
 
         // Filter role
         if ($role === 'teknisi') {
-            $builder->where('maintenance_logs.technician_id', $userId);
+            $this->maintenanceLogModel->where('maintenance_logs.technician_id', $userId);
         }
 
         // Filter bulan
         if ($month) {
-            $builder->like('DATE(maintenance_logs.created_at)', $month);
+            $this->maintenanceLogModel->like('DATE(maintenance_logs.created_at)', $month);
         }
 
         // Search
         if ($keyword) {
-            $builder->groupStart()
+            $this->maintenanceLogModel->groupStart()
                     ->like('assets.asset_name', $keyword)
                     ->orLike('maintenance_logs.diagnosis', $keyword)
                     ->orLike('maintenance_logs.action_taken', $keyword)
                     ->groupEnd();
         }
 
-        // 🔥 FIX UTAMA: EKSEKUSI QUERY
-        $logs = $builder
-            ->orderBy('maintenance_logs.created_at', 'DESC')
-            ->get()
-            ->getResultArray();
+        // Get data dengan pagination
+        $logs = $this->maintenanceLogModel->paginate(10, 'default');
+
+        // Statistik
+        $currentMonth = $month ?? date('Y-m');
+        
+        // Total logs
+        if ($role === 'teknisi') {
+            $totalLogsBuilder = $this->maintenanceLogModel->builder();
+            $totalLogs = $totalLogsBuilder->where('technician_id', $userId)->countAllResults();
+        } else {
+            $totalLogs = $this->maintenanceLogModel->countAll();
+        }
+        
+        // Monthly logs
+        $monthlyLogsBuilder = $this->maintenanceLogModel->builder();
+        if ($role === 'teknisi') {
+            $monthlyLogsBuilder->where('technician_id', $userId);
+        }
+        $monthlyLogs = $monthlyLogsBuilder->like('DATE(created_at)', $currentMonth)
+                                          ->countAllResults();
+        
+        // Monthly cost
+        $monthlyCostBuilder = $this->maintenanceLogModel->builder();
+        if ($role === 'teknisi') {
+            $monthlyCostBuilder->where('technician_id', $userId);
+        }
+        $monthlyCostResult = $monthlyCostBuilder->selectSum('cost')
+                                                ->like('DATE(created_at)', $currentMonth)
+                                                ->get()
+                                                ->getRowArray();
+        $monthlyCost = $monthlyCostResult['cost'] ?? 0;
 
         $data = [
             'title' => 'Log Maintenance',
@@ -73,25 +107,21 @@ class Maintenance extends BaseController
                 'role'       => $role,
                 'department' => $this->session->get('department'),
             ],
-            'logs'          => $logs,
-            'keyword'       => $keyword,
-            'month_filter'  => $month,
+            'logs'   => $logs,
+            'pager'  => $this->maintenanceLogModel->pager,
+            'keyword' => $keyword,
+            'month_filter' => $month,
 
             // Statistik
-            'total_logs' => $role === 'teknisi'
-                ? $this->maintenanceLogModel->where('technician_id', $userId)->countAllResults()
-                : $this->maintenanceLogModel->countAll(),
-
-            'this_month' => $role === 'teknisi'
-                ? $this->maintenanceLogModel->getMyMaintenanceThisMonth($userId)
-                : $this->maintenanceLogModel->getMaintenanceThisMonth(),
-
-            'total_cost' => $this->maintenanceLogModel->getTotalCostThisMonth(),
+            'total_logs'   => $totalLogs,
+            'monthly_logs' => $monthlyLogs,
+            'monthly_cost' => $monthlyCost,
         ];
 
         return view('maintenance/index', $data);
     }
 
+    
     /**
      * My work history (Teknisi)
      */
@@ -102,27 +132,41 @@ class Maintenance extends BaseController
         $keyword = $this->request->getGet('keyword');
         $month   = $this->request->getGet('month') ?: date('Y-m');
 
-        $builder = $this->maintenanceLogModel->builder();
-        $builder->select('maintenance_logs.*, assets.asset_name, assets.asset_code')
-                ->join('assets', 'assets.asset_id = maintenance_logs.asset_id')
-                ->where('maintenance_logs.technician_id', $userId);
+        // Build query
+        $this->maintenanceLogModel
+            ->select('maintenance_logs.*, 
+                     assets.asset_name, 
+                     assets.asset_code,
+                     tickets.ticket_number')
+            ->join('assets', 'assets.asset_id = maintenance_logs.asset_id', 'left')
+            ->join('tickets', 'tickets.ticket_id = maintenance_logs.ticket_id', 'left')
+            ->where('maintenance_logs.technician_id', $userId)
+            ->orderBy('maintenance_logs.created_at', 'DESC');
 
         if ($month) {
-            $builder->like('DATE(maintenance_logs.created_at)', $month);
+            $this->maintenanceLogModel->like('DATE(maintenance_logs.created_at)', $month);
         }
 
         if ($keyword) {
-            $builder->groupStart()
+            $this->maintenanceLogModel->groupStart()
                     ->like('assets.asset_name', $keyword)
                     ->orLike('maintenance_logs.diagnosis', $keyword)
                     ->groupEnd();
         }
 
-        // 🔥 FIX UTAMA
-        $logs = $builder
-            ->orderBy('maintenance_logs.created_at', 'DESC')
-            ->get()
-            ->getResultArray();
+        // Get data dengan pagination
+        $logs = $this->maintenanceLogModel->paginate(10, 'default');
+
+        // Statistik
+        $currentMonth = $month ?? date('Y-m');
+        
+        $totalWorkBuilder = $this->maintenanceLogModel->builder();
+        $totalWork = $totalWorkBuilder->where('technician_id', $userId)->countAllResults();
+        
+        $monthlyWorkBuilder = $this->maintenanceLogModel->builder();
+        $monthlyWork = $monthlyWorkBuilder->where('technician_id', $userId)
+                                          ->like('DATE(created_at)', $currentMonth)
+                                          ->countAllResults();
 
         $data = [
             'title' => 'Riwayat Pekerjaan Saya',
@@ -131,17 +175,116 @@ class Maintenance extends BaseController
                 'role'       => $this->session->get('role'),
                 'department' => $this->session->get('department'),
             ],
-            'logs'         => $logs,
-            'keyword'      => $keyword,
+            'logs'   => $logs,
+            'pager'  => $this->maintenanceLogModel->pager,
+            'keyword' => $keyword,
             'month_filter' => $month,
 
-            'total_work' => $this->maintenanceLogModel
-                ->where('technician_id', $userId)
-                ->countAllResults(),
-
-            'this_month' => $this->maintenanceLogModel->getMyMaintenanceThisMonth($userId),
+            'total_work'   => $totalWork,
+            'monthly_work' => $monthlyWork,
         ];
 
         return view('maintenance/history', $data);
+    }
+
+    /**
+     * Show update form for a ticket
+     */
+    public function update($ticketId)
+    {
+        $role = $this->session->get('role');
+        
+        if (!in_array($role, ['admin', 'teknisi'])) {
+            return redirect()->to('/maintenance')
+                           ->with('error', 'Anda tidak memiliki akses');
+        }
+
+        // Get ticket detail
+        $ticket = $this->ticketModel->getTicketDetail($ticketId);
+
+        if (!$ticket) {
+            return redirect()->to('/maintenance')
+                           ->with('error', 'Tiket tidak ditemukan');
+        }
+
+        // Get existing maintenance logs for this ticket
+        $logs = $this->maintenanceLogModel->getLogsByTicket($ticketId);
+
+        $data = [
+            'title' => 'Update Perbaikan',
+            'user' => [
+                'full_name' => $this->session->get('full_name'),
+                'role' => $this->session->get('role'),
+                'department' => $this->session->get('department'),
+            ],
+            'ticket' => $ticket,
+            'logs' => $logs,
+        ];
+
+        return view('maintenance/update', $data);
+    }
+
+    /**
+     * Save maintenance log
+     */
+    public function save($ticketId)
+    {
+        $role = $this->session->get('role');
+        
+        if (!in_array($role, ['admin', 'teknisi'])) {
+            return redirect()->to('/maintenance')
+                           ->with('error', 'Anda tidak memiliki akses');
+        }
+
+        // Get ticket untuk ambil asset_id
+        $ticket = $this->ticketModel->find($ticketId);
+        
+        if (!$ticket) {
+            return redirect()->back()
+                           ->with('error', 'Tiket tidak ditemukan');
+        }
+
+        $validation = \Config\Services::validation();
+
+        // ⭐ PERBAIKAN: Sesuai field di database
+        $rules = [
+            'diagnosis' => 'required|min_length[10]',
+            'action_taken' => 'required|min_length[10]',
+            'parts_used' => 'permit_empty|max_length[255]',
+            'cost' => 'required|numeric',
+            'start_time' => 'required|valid_date',
+            'end_time' => 'required|valid_date',
+        ];
+
+        if (!$this->validate($rules)) {
+            return redirect()->back()
+                           ->withInput()
+                           ->with('errors', $validation->getErrors());
+        }
+
+        // ⭐ PERBAIKAN: Field sesuai struktur database
+        $data = [
+            'ticket_id' => $ticketId,
+            'asset_id' => $ticket['asset_id'], // Ambil dari ticket
+            'technician_id' => $this->session->get('user_id'),
+            'diagnosis' => $this->request->getPost('diagnosis'),
+            'action_taken' => $this->request->getPost('action_taken'),
+            'parts_used' => $this->request->getPost('parts_used'),
+            'cost' => $this->request->getPost('cost'),
+            'start_time' => $this->request->getPost('start_time'),
+            'end_time' => $this->request->getPost('end_time'),
+        ];
+
+        if ($this->maintenanceLogModel->insert($data)) {
+            // Update ticket status to in_progress
+            $this->ticketModel->update($ticketId, ['status' => 'in_progress']);
+
+            return redirect()->to('/maintenance/update/' . $ticketId)
+                           ->with('success', 'Log maintenance berhasil ditambahkan');
+        } else {
+            return redirect()->back()
+                           ->withInput()
+                           ->with('error', 'Gagal menyimpan log maintenance');
+        }
     }
 }

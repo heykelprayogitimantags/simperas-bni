@@ -37,35 +37,37 @@ class Ticket extends BaseController
         $status = $this->request->getGet('status');
         $priority = $this->request->getGet('priority');
         
-        $builder = $this->ticketModel->builder();
-        $builder->select('tickets.*, assets.asset_name, assets.asset_code, users.full_name as reporter_name')
-                ->join('assets', 'assets.asset_id = tickets.asset_id')
-                ->join('users', 'users.user_id = tickets.reported_by');
+        // Gunakan model langsung untuk pagination
+        $this->ticketModel->select('tickets.*, assets.asset_name, assets.asset_code, users.full_name as reporter_name')
+                          ->join('assets', 'assets.asset_id = tickets.asset_id')
+                          ->join('users', 'users.user_id = tickets.reported_by')
+                          ->orderBy('tickets.created_at', 'DESC');
         
         // Filter by role
         if ($role === 'pegawai') {
-            // Pegawai only see their own tickets
-            $builder->where('tickets.reported_by', $userId);
+            $this->ticketModel->where('tickets.reported_by', $userId);
         }
-        // Admin & Teknisi see all tickets
         
         // Apply filters
         if ($keyword) {
-            $builder->groupStart()
-                    ->like('tickets.ticket_number', $keyword)
-                    ->orLike('tickets.title', $keyword)
-                    ->orLike('tickets.description', $keyword)
-                    ->orLike('assets.asset_name', $keyword)
-                    ->groupEnd();
+            $this->ticketModel->groupStart()
+                              ->like('tickets.ticket_number', $keyword)
+                              ->orLike('tickets.title', $keyword)
+                              ->orLike('tickets.description', $keyword)
+                              ->orLike('assets.asset_name', $keyword)
+                              ->groupEnd();
         }
         
         if ($status) {
-            $builder->where('tickets.status', $status);
+            $this->ticketModel->where('tickets.status', $status);
         }
         
         if ($priority) {
-            $builder->where('tickets.priority', $priority);
+            $this->ticketModel->where('tickets.priority', $priority);
         }
+        
+        // Pagination
+        $tickets = $this->ticketModel->paginate(10, 'default');
         
         $data = [
             'title' => 'Daftar Tiket',
@@ -74,7 +76,7 @@ class Ticket extends BaseController
                 'role' => $this->session->get('role'),
                 'department' => $this->session->get('department'),
             ],
-            
+            'tickets' => $tickets,
             'pager' => $this->ticketModel->pager,
             'keyword' => $keyword,
             'status_filter' => $status,
@@ -82,9 +84,9 @@ class Ticket extends BaseController
             
             // Statistics
             'total_tickets' => $this->ticketModel->countAll(),
-            'pending' => $this->ticketModel->where('status', 'pending')->countAllResults(),
-            'in_progress' => $this->ticketModel->where('status', 'in_progress')->countAllResults(),
-            'completed' => $this->ticketModel->where('status', 'completed')->countAllResults(),
+            'pending' => $this->ticketModel->where('status', 'pending')->countAllResults(false),
+            'in_progress' => $this->ticketModel->where('status', 'in_progress')->countAllResults(false),
+            'completed' => $this->ticketModel->where('status', 'completed')->countAllResults(false),
         ];
 
         return view('ticket/index', $data);
@@ -95,7 +97,6 @@ class Ticket extends BaseController
      */
     public function create()
     {
-        // Get all assets with status 'baik' or 'rusak_ringan'
         $assets = $this->assetModel->whereIn('status', ['baik', 'rusak_ringan', 'rusak_berat'])
                                    ->orderBy('asset_name', 'ASC')
                                    ->findAll();
@@ -133,7 +134,6 @@ class Ticket extends BaseController
                            ->with('errors', $validation->getErrors());
         }
 
-        // Generate ticket number
         $ticketNumber = $this->ticketModel->generateTicketNumber();
 
         $data = [
@@ -168,7 +168,6 @@ class Ticket extends BaseController
                            ->with('error', 'Tiket tidak ditemukan');
         }
 
-        // Check permission
         $role = $this->session->get('role');
         $userId = $this->session->get('user_id');
         
@@ -177,7 +176,6 @@ class Ticket extends BaseController
                            ->with('error', 'Anda tidak memiliki akses ke tiket ini');
         }
 
-        // Get maintenance logs for this ticket
         $maintenanceLogs = $this->maintenanceLogModel->getLogsByTicket($id);
 
         $data = [
@@ -230,51 +228,71 @@ class Ticket extends BaseController
     }
 
     /**
-     * My tickets (for pegawai)
-     */
-    public function myTickets()
-    {
-        $userId = $this->session->get('user_id');
-        
-        $keyword = $this->request->getGet('keyword');
-        $status = $this->request->getGet('status');
-        
-        $builder = $this->ticketModel->builder();
-        $builder->select('tickets.*, assets.asset_name, assets.asset_code')
-                ->join('assets', 'assets.asset_id = tickets.asset_id')
-                ->where('tickets.reported_by', $userId);
-        
-        if ($keyword) {
-            $builder->groupStart()
-                    ->like('tickets.ticket_number', $keyword)
-                    ->orLike('tickets.title', $keyword)
-                    ->groupEnd();
-        }
-        
-        if ($status) {
-            $builder->where('tickets.status', $status);
-        }
-        
-        $data = [
-            'title' => 'Tiket Saya',
-            'user' => [
-                'full_name' => $this->session->get('full_name'),
-                'role' => $this->session->get('role'),
-                'department' => $this->session->get('department'),
-            ],
-            'pager' => $this->ticketModel->pager,
-            'keyword' => $keyword,
-            'status_filter' => $status,
-            
-            // My statistics
-            'total' => $this->ticketModel->where('reported_by', $userId)->countAllResults(),
-            'pending' => $this->ticketModel->where('reported_by', $userId)->where('status', 'pending')->countAllResults(),
-            'in_progress' => $this->ticketModel->where('reported_by', $userId)->where('status', 'in_progress')->countAllResults(),
-            'completed' => $this->ticketModel->where('reported_by', $userId)->where('status', 'completed')->countAllResults(),
-        ];
-
-        return view('ticket/my_tickets', $data);
+ * My tickets (for pegawai)
+ */
+public function myTickets()
+{
+    $userId = $this->session->get('user_id');
+    
+    $keyword = $this->request->getGet('keyword');
+    $status = $this->request->getGet('status');
+    
+    // Build query menggunakan model
+    $this->ticketModel->select('tickets.*, assets.asset_name, assets.asset_code')
+                      ->join('assets', 'assets.asset_id = tickets.asset_id')
+                      ->where('tickets.reported_by', $userId)
+                      ->orderBy('tickets.created_at', 'DESC');
+    
+    if ($keyword) {
+        $this->ticketModel->groupStart()
+                          ->like('tickets.ticket_number', $keyword)
+                          ->orLike('tickets.title', $keyword)
+                          ->groupEnd();
     }
+    
+    if ($status) {
+        $this->ticketModel->where('tickets.status', $status);
+    }
+    
+    // Pagination menggunakan model
+    $tickets = $this->ticketModel->paginate(10, 'default');
+    
+    // ⭐ SOLUSI EFISIEN - Ambil semua tiket user sekali saja
+    $allMyTickets = $this->ticketModel->where('reported_by', $userId)->findAll();
+    
+    // Hitung manual dari array
+    $total = count($allMyTickets);
+    $pending = count(array_filter($allMyTickets, function($ticket) {
+        return $ticket['status'] === 'pending';
+    }));
+    $in_progress = count(array_filter($allMyTickets, function($ticket) {
+        return $ticket['status'] === 'in_progress';
+    }));
+    $completed = count(array_filter($allMyTickets, function($ticket) {
+        return $ticket['status'] === 'completed';
+    }));
+    
+    $data = [
+        'title' => 'Tiket Saya',
+        'user' => [
+            'full_name' => $this->session->get('full_name'),
+            'role' => $this->session->get('role'),
+            'department' => $this->session->get('department'),
+        ],
+        'tickets' => $tickets,
+        'pager' => $this->ticketModel->pager,
+        'keyword' => $keyword,
+        'status_filter' => $status,
+        
+        // Statistics
+        'total' => $total,
+        'pending' => $pending,
+        'in_progress' => $in_progress,
+        'completed' => $completed,
+    ];
+
+    return view('ticket/my_tickets', $data);
+}
 
     /**
      * Delete ticket (admin only)
@@ -295,7 +313,6 @@ class Ticket extends BaseController
                            ->with('error', 'Tiket tidak ditemukan');
         }
 
-        // Check if has maintenance logs
         $hasLogs = $this->maintenanceLogModel->where('ticket_id', $id)->countAllResults() > 0;
 
         if ($hasLogs) {
