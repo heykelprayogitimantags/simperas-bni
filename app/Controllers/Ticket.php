@@ -28,70 +28,103 @@ class Ticket extends BaseController
     /**
      * Display ticket list (for all roles)
      */
-    public function index()
-    {
-        $role = $this->session->get('role');
-        $userId = $this->session->get('user_id');
-        
-        $keyword = $this->request->getGet('keyword');
-        $status = $this->request->getGet('status');
-        $priority = $this->request->getGet('priority');
-        
-        // Gunakan model langsung untuk pagination
-        $this->ticketModel->select('tickets.*, assets.asset_name, assets.asset_code, users.full_name as reporter_name')
-                          ->join('assets', 'assets.asset_id = tickets.asset_id')
-                          ->join('users', 'users.user_id = tickets.reported_by')
-                          ->orderBy('tickets.created_at', 'DESC');
-        
-        // Filter by role
-        if ($role === 'pegawai') {
-            $this->ticketModel->where('tickets.reported_by', $userId);
-        }
-        
-        // Apply filters
-        if ($keyword) {
-            $this->ticketModel->groupStart()
-                              ->like('tickets.ticket_number', $keyword)
-                              ->orLike('tickets.title', $keyword)
-                              ->orLike('tickets.description', $keyword)
-                              ->orLike('assets.asset_name', $keyword)
-                              ->groupEnd();
-        }
-        
-        if ($status) {
-            $this->ticketModel->where('tickets.status', $status);
-        }
-        
-        if ($priority) {
-            $this->ticketModel->where('tickets.priority', $priority);
-        }
-        
-        // Pagination
-        $tickets = $this->ticketModel->paginate(10, 'default');
-        
-        $data = [
-            'title' => 'Daftar Tiket',
-            'user' => [
-                'full_name' => $this->session->get('full_name'),
-                'role' => $this->session->get('role'),
-                'department' => $this->session->get('department'),
-            ],
-            'tickets' => $tickets,
-            'pager' => $this->ticketModel->pager,
-            'keyword' => $keyword,
-            'status_filter' => $status,
-            'priority_filter' => $priority,
-            
-            // Statistics
-            'total_tickets' => $this->ticketModel->countAll(),
-            'pending' => $this->ticketModel->where('status', 'pending')->countAllResults(false),
-            'in_progress' => $this->ticketModel->where('status', 'in_progress')->countAllResults(false),
-            'completed' => $this->ticketModel->where('status', 'completed')->countAllResults(false),
-        ];
-
-        return view('ticket/index', $data);
+    /**
+ * Display ticket list (for all roles)
+ */
+public function index()
+{
+    $role = $this->session->get('role');
+    $userId = $this->session->get('user_id');
+    
+    $keyword = $this->request->getGet('keyword');
+    $status = $this->request->getGet('status');
+    $priority = $this->request->getGet('priority');
+    
+    // Build query
+    $this->ticketModel->select('tickets.*, assets.asset_name, assets.asset_code, users.full_name as reporter_name')
+                      ->join('assets', 'assets.asset_id = tickets.asset_id')
+                      ->join('users', 'users.user_id = tickets.reported_by')
+                      ->orderBy('tickets.created_at', 'DESC');
+    
+    // Filter by role
+    if ($role === 'pegawai') {
+        $this->ticketModel->where('tickets.reported_by', $userId);
     }
+    
+    // Apply filters
+    if ($keyword) {
+        $this->ticketModel->groupStart()
+                          ->like('tickets.ticket_number', $keyword)
+                          ->orLike('tickets.title', $keyword)
+                          ->orLike('tickets.description', $keyword)
+                          ->orLike('assets.asset_name', $keyword)
+                          ->groupEnd();
+    }
+    
+    if ($status) {
+        $this->ticketModel->where('tickets.status', $status);
+    }
+    
+    if ($priority) {
+        $this->ticketModel->where('tickets.priority', $priority);
+    }
+    
+    // Pagination
+    $tickets = $this->ticketModel->paginate(10, 'default');
+    
+    // ⭐ PERBAIKAN STATISTIK - Hitung berdasarkan role
+    if ($role === 'pegawai') {
+        // Pegawai: hanya tiket mereka sendiri
+        $allMyTickets = $this->ticketModel->where('reported_by', $userId)->findAll();
+        
+        $totalTickets = count($allMyTickets);
+        $pending = count(array_filter($allMyTickets, function($ticket) {
+            return $ticket['status'] === 'pending';
+        }));
+        $inProgress = count(array_filter($allMyTickets, function($ticket) {
+            return $ticket['status'] === 'in_progress';
+        }));
+        $completed = count(array_filter($allMyTickets, function($ticket) {
+            return $ticket['status'] === 'completed';
+        }));
+    } else {
+        // Admin & Teknisi: semua tiket
+        $allTickets = $this->ticketModel->findAll();
+        
+        $totalTickets = count($allTickets);
+        $pending = count(array_filter($allTickets, function($ticket) {
+            return $ticket['status'] === 'pending';
+        }));
+        $inProgress = count(array_filter($allTickets, function($ticket) {
+            return $ticket['status'] === 'in_progress';
+        }));
+        $completed = count(array_filter($allTickets, function($ticket) {
+            return $ticket['status'] === 'completed';
+        }));
+    }
+    
+    $data = [
+        'title' => 'Daftar Tiket',
+        'user' => [
+            'full_name' => $this->session->get('full_name'),
+            'role' => $this->session->get('role'),
+            'department' => $this->session->get('department'),
+        ],
+        'tickets' => $tickets,
+        'pager' => $this->ticketModel->pager,
+        'keyword' => $keyword,
+        'status_filter' => $status,
+        'priority_filter' => $priority,
+        
+        // Statistics
+        'total_tickets' => $totalTickets,
+        'pending' => $pending,
+        'in_progress' => $inProgress,
+        'completed' => $completed,
+    ];
 
+    return view('ticket/index', $data);
+}
     /**
      * Show create form (for pegawai)
      */
@@ -171,6 +204,7 @@ class Ticket extends BaseController
         $role = $this->session->get('role');
         $userId = $this->session->get('user_id');
         
+        // ⭐ Pegawai hanya bisa lihat tiket mereka sendiri
         if ($role === 'pegawai' && $ticket['reported_by'] != $userId) {
             return redirect()->to('/ticket')
                            ->with('error', 'Anda tidak memiliki akses ke tiket ini');
@@ -199,6 +233,7 @@ class Ticket extends BaseController
     {
         $role = $this->session->get('role');
         
+        // ⭐ Hanya admin dan teknisi yang bisa update status
         if (!in_array($role, ['admin', 'teknisi'])) {
             return redirect()->to('/ticket')
                            ->with('error', 'Anda tidak memiliki akses untuk mengubah status');
@@ -228,71 +263,71 @@ class Ticket extends BaseController
     }
 
     /**
- * My tickets (for pegawai)
- */
-public function myTickets()
-{
-    $userId = $this->session->get('user_id');
-    
-    $keyword = $this->request->getGet('keyword');
-    $status = $this->request->getGet('status');
-    
-    // Build query menggunakan model
-    $this->ticketModel->select('tickets.*, assets.asset_name, assets.asset_code')
-                      ->join('assets', 'assets.asset_id = tickets.asset_id')
-                      ->where('tickets.reported_by', $userId)
-                      ->orderBy('tickets.created_at', 'DESC');
-    
-    if ($keyword) {
-        $this->ticketModel->groupStart()
-                          ->like('tickets.ticket_number', $keyword)
-                          ->orLike('tickets.title', $keyword)
-                          ->groupEnd();
-    }
-    
-    if ($status) {
-        $this->ticketModel->where('tickets.status', $status);
-    }
-    
-    // Pagination menggunakan model
-    $tickets = $this->ticketModel->paginate(10, 'default');
-    
-    // ⭐ SOLUSI EFISIEN - Ambil semua tiket user sekali saja
-    $allMyTickets = $this->ticketModel->where('reported_by', $userId)->findAll();
-    
-    // Hitung manual dari array
-    $total = count($allMyTickets);
-    $pending = count(array_filter($allMyTickets, function($ticket) {
-        return $ticket['status'] === 'pending';
-    }));
-    $in_progress = count(array_filter($allMyTickets, function($ticket) {
-        return $ticket['status'] === 'in_progress';
-    }));
-    $completed = count(array_filter($allMyTickets, function($ticket) {
-        return $ticket['status'] === 'completed';
-    }));
-    
-    $data = [
-        'title' => 'Tiket Saya',
-        'user' => [
-            'full_name' => $this->session->get('full_name'),
-            'role' => $this->session->get('role'),
-            'department' => $this->session->get('department'),
-        ],
-        'tickets' => $tickets,
-        'pager' => $this->ticketModel->pager,
-        'keyword' => $keyword,
-        'status_filter' => $status,
+     * My tickets (for pegawai)
+     */
+    public function myTickets()
+    {
+        $userId = $this->session->get('user_id');
         
-        // Statistics
-        'total' => $total,
-        'pending' => $pending,
-        'in_progress' => $in_progress,
-        'completed' => $completed,
-    ];
+        $keyword = $this->request->getGet('keyword');
+        $status = $this->request->getGet('status');
+        
+        // Build query
+        $this->ticketModel->select('tickets.*, assets.asset_name, assets.asset_code')
+                          ->join('assets', 'assets.asset_id = tickets.asset_id')
+                          ->where('tickets.reported_by', $userId)
+                          ->orderBy('tickets.created_at', 'DESC');
+        
+        if ($keyword) {
+            $this->ticketModel->groupStart()
+                              ->like('tickets.ticket_number', $keyword)
+                              ->orLike('tickets.title', $keyword)
+                              ->groupEnd();
+        }
+        
+        if ($status) {
+            $this->ticketModel->where('tickets.status', $status);
+        }
+        
+        // Pagination
+        $tickets = $this->ticketModel->paginate(10, 'default');
+        
+        // Statistics - Ambil semua tiket user sekali
+        $allMyTickets = $this->ticketModel->where('reported_by', $userId)->findAll();
+        
+        // Hitung manual dari array
+        $total = count($allMyTickets);
+        $pending = count(array_filter($allMyTickets, function($ticket) {
+            return $ticket['status'] === 'pending';
+        }));
+        $in_progress = count(array_filter($allMyTickets, function($ticket) {
+            return $ticket['status'] === 'in_progress';
+        }));
+        $completed = count(array_filter($allMyTickets, function($ticket) {
+            return $ticket['status'] === 'completed';
+        }));
+        
+        $data = [
+            'title' => 'Tiket Saya',
+            'user' => [
+                'full_name' => $this->session->get('full_name'),
+                'role' => $this->session->get('role'),
+                'department' => $this->session->get('department'),
+            ],
+            'tickets' => $tickets,
+            'pager' => $this->ticketModel->pager,
+            'keyword' => $keyword,
+            'status_filter' => $status,
+            
+            // Statistics
+            'total' => $total,
+            'pending' => $pending,
+            'in_progress' => $in_progress,
+            'completed' => $completed,
+        ];
 
-    return view('ticket/my_tickets', $data);
-}
+        return view('ticket/my_tickets', $data);
+    }
 
     /**
      * Delete ticket (admin only)
@@ -301,6 +336,7 @@ public function myTickets()
     {
         $role = $this->session->get('role');
         
+        // ⭐ Hanya admin yang bisa hapus tiket
         if ($role !== 'admin') {
             return redirect()->to('/ticket')
                            ->with('error', 'Hanya admin yang dapat menghapus tiket');
@@ -313,6 +349,7 @@ public function myTickets()
                            ->with('error', 'Tiket tidak ditemukan');
         }
 
+        // ⭐ Cek apakah tiket sudah punya log maintenance
         $hasLogs = $this->maintenanceLogModel->where('ticket_id', $id)->countAllResults() > 0;
 
         if ($hasLogs) {

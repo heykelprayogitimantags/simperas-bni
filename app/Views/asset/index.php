@@ -189,7 +189,7 @@
                                         </a>
                                         <a href="<?= base_url('asset/delete/' . $asset['asset_id']) ?>" 
                                            class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-xs font-medium transition-colors"
-                                           onclick="return confirmDelete('Apakah Anda yakin ingin menghapus asset ini?')"
+                                           onclick="return confirm('Apakah Anda yakin ingin menghapus asset ini?')"
                                            title="Hapus">
                                             <i class="fas fa-trash"></i>
                                         </a>
@@ -202,15 +202,20 @@
             </table>
         </div>
 
-        <!-- Pagination -->
+        <!-- ⭐ Pagination - PERBAIKAN -->
         <?php if (!empty($assets)): ?>
             <div class="bg-gray-50 px-6 py-4 border-t border-gray-200">
-              <?= $pager->links('assets', 'tailwind_pagination') ?>
-
+                 <?= $pager->links('default', 'tailwind_pagination') ?>
             </div>
         <?php endif; ?>
     </div>
 
 </main>
+
+<script>
+function confirmDelete(message) {
+    return confirm(message);
+}
+</script>
 
 <?= view('layout/footer') ?>

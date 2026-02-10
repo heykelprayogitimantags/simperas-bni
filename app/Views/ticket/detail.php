@@ -16,20 +16,23 @@
                 <h2 class="text-3xl font-bold text-gray-800"><?= esc($ticket['title']) ?></h2>
                 <p class="text-gray-600 mt-1">Detail informasi tiket</p>
             </div>
-            <?php if ($user['role'] === 'admin' || $user['role'] === 'teknisi'): ?>
-                <div class="flex gap-2">
+            <div class="flex gap-2">
+                <!-- ⭐ Update Maintenance - HANYA TEKNISI -->
+                <?php if ($user['role'] === 'teknisi'): ?>
                     <a href="<?= base_url('maintenance/update/' . $ticket['ticket_id']) ?>" class="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg font-medium transition-colors">
                         <i class="fas fa-wrench mr-2"></i> Update Maintenance
                     </a>
-                    <?php if ($user['role'] === 'admin'): ?>
-                        <a href="<?= base_url('ticket/delete/' . $ticket['ticket_id']) ?>" 
-                           onclick="return confirmDelete('Apakah Anda yakin ingin menghapus tiket ini?')"
-                           class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg font-medium transition-colors">
-                            <i class="fas fa-trash mr-2"></i> Hapus
-                        </a>
-                    <?php endif; ?>
-                </div>
-            <?php endif; ?>
+                <?php endif; ?>
+                
+                <!-- ⭐ Hapus Tiket - HANYA ADMIN -->
+                <?php if ($user['role'] === 'admin'): ?>
+                    <a href="<?= base_url('ticket/delete/' . $ticket['ticket_id']) ?>" 
+                       onclick="return confirmDelete('Apakah Anda yakin ingin menghapus tiket ini?')"
+                       class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg font-medium transition-colors">
+                        <i class="fas fa-trash mr-2"></i> Hapus
+                    </a>
+                <?php endif; ?>
+            </div>
         </div>
     </div>
 
@@ -200,7 +203,8 @@
                     <i class="fas fa-clipboard-list text-gray-300 text-5xl mb-3"></i>
                     <p class="text-gray-500 font-medium">Belum ada riwayat maintenance</p>
                     <p class="text-sm text-gray-400 mt-1">Tiket ini belum ditangani oleh teknisi</p>
-                    <?php if ($user['role'] === 'admin' || $user['role'] === 'teknisi'): ?>
+                    <!-- ⭐ Tombol Update - HANYA TEKNISI -->
+                    <?php if ($user['role'] === 'teknisi'): ?>
                         <a href="<?= base_url('maintenance/update/' . $ticket['ticket_id']) ?>" class="inline-block mt-4 bg-orange-500 hover:bg-orange-600 text-white px-6 py-2 rounded-lg font-medium transition-colors">
                             <i class="fas fa-wrench mr-2"></i> Update Maintenance Sekarang
                         </a>
@@ -276,5 +280,11 @@
     </div>
 
 </main>
+
+<script>
+function confirmDelete(message) {
+    return confirm(message);
+}
+</script>
 
 <?= view('layout/footer') ?>

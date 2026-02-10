@@ -6,10 +6,10 @@ use CodeIgniter\Router\RouteCollection;
  * @var RouteCollection $routes
  */
 
-// Default route
+// Default
 $routes->get('/', 'Auth::login');
 
-// Auth routes
+// Auth
 $routes->group('', ['filter' => 'csrf'], function($routes) {
     $routes->get('login', 'Auth::login');
     $routes->post('login', 'Auth::attemptLogin');
@@ -17,49 +17,47 @@ $routes->group('', ['filter' => 'csrf'], function($routes) {
 
 $routes->get('logout', 'Auth::logout');
 
-// Protected routes (require login)
+// Protected
 $routes->group('', ['filter' => 'auth'], function($routes) {
-    
-    // Dashboard routes
+
+    // Dashboard
     $routes->get('dashboard', 'Dashboard::index');
     $routes->get('dashboard/admin', 'Dashboard::admin', ['filter' => 'auth:admin']);
     $routes->get('dashboard/teknisi', 'Dashboard::teknisi', ['filter' => 'auth:teknisi']);
     $routes->get('dashboard/pegawai', 'Dashboard::pegawai', ['filter' => 'auth:pegawai']);
-    
-    // Asset Management (Admin only)
+
+    // Asset (Admin)
     $routes->group('asset', ['filter' => 'auth:admin'], function($routes) {
         $routes->get('/', 'Asset::index');
         $routes->get('create', 'Asset::create');
         $routes->post('store', 'Asset::store');
+        $routes->get('detail/(:num)', 'Asset::detail/$1');
         $routes->get('edit/(:num)', 'Asset::edit/$1');
         $routes->post('update/(:num)', 'Asset::update/$1');
         $routes->get('delete/(:num)', 'Asset::delete/$1');
-        $routes->get('detail/(:num)', 'Asset::detail/$1');
     });
-    
-    // Ticket Management
+
+    // Ticket
     $routes->group('ticket', function($routes) {
         $routes->get('/', 'Ticket::index');
         $routes->get('create', 'Ticket::create');
         $routes->post('store', 'Ticket::store');
         $routes->get('detail/(:num)', 'Ticket::detail/$1');
-        $routes->get('my-tickets', 'Ticket::myTickets'); // For pegawai
-        
-        // ⭐ TAMBAHKAN INI - Update status (Admin/Teknisi only)
+        $routes->get('my-tickets', 'Ticket::myTickets');
         $routes->post('update-status/(:num)', 'Ticket::updateStatus/$1', ['filter' => 'auth:admin,teknisi']);
-        
-        // Delete ticket (Admin only)
         $routes->get('delete/(:num)', 'Ticket::delete/$1', ['filter' => 'auth:admin']);
     });
-    
-    // Maintenance (Teknisi only)
+
+    // Maintenance
     $routes->group('maintenance', ['filter' => 'auth:teknisi,admin'], function($routes) {
         $routes->get('/', 'Maintenance::index');
+        $routes->get('history', 'Maintenance::history');
+        $routes->get('detail/(:num)', 'Maintenance::detail/$1');
         $routes->get('update/(:num)', 'Maintenance::update/$1');
         $routes->post('save/(:num)', 'Maintenance::save/$1');
     });
-    
-    // Schedule Management (Admin only)
+
+    // Schedule (Admin)
     $routes->group('schedule', ['filter' => 'auth:admin'], function($routes) {
         $routes->get('/', 'Schedule::index');
         $routes->get('create', 'Schedule::create');
@@ -68,8 +66,8 @@ $routes->group('', ['filter' => 'auth'], function($routes) {
         $routes->post('update/(:num)', 'Schedule::update/$1');
         $routes->get('delete/(:num)', 'Schedule::delete/$1');
     });
-    
-    // Report (Admin only)
+
+    // Report (Admin)
     $routes->group('report', ['filter' => 'auth:admin'], function($routes) {
         $routes->get('/', 'Report::index');
         $routes->get('assets', 'Report::assets');
@@ -78,8 +76,8 @@ $routes->group('', ['filter' => 'auth'], function($routes) {
         $routes->post('generate', 'Report::generate');
         $routes->get('export/(:any)', 'Report::export/$1');
     });
-    
-    // User Management (Admin only)
+
+    // User (Admin)
     $routes->group('user', ['filter' => 'auth:admin'], function($routes) {
         $routes->get('/', 'User::index');
         $routes->get('create', 'User::create');
@@ -88,7 +86,6 @@ $routes->group('', ['filter' => 'auth'], function($routes) {
         $routes->post('update/(:num)', 'User::update/$1');
         $routes->get('toggle-status/(:num)', 'User::toggleStatus/$1');
     });
-    $routes->get('maintenance/history', 'Maintenance::history');
 
     // Profile
     $routes->get('profile', 'Profile::index');

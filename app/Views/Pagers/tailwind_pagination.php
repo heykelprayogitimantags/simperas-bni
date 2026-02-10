@@ -1,61 +1,63 @@
-<?php if ($pager->hasPrevious() || $pager->hasNext()) : ?>
-<nav class="flex items-center justify-between">
-    
-    <!-- Info -->
-    <div class="text-sm text-gray-600">
-        Menampilkan
-        <span class="font-medium"><?= $pager->getFirstItem() ?></span>
-        –
-        <span class="font-medium"><?= $pager->getLastItem() ?></span>
-        dari
-        <span class="font-medium"><?= $pager->getTotal() ?></span>
-        asset
-    </div>
+<?php
+/**
+ * @var \CodeIgniter\Pager\PagerRenderer $pager
+ */
+$pager->setSurroundCount(2);
+?>
 
-    <!-- Pagination -->
-    <ul class="inline-flex items-center gap-1">
+<nav aria-label="Page navigation">
+    <ul class="flex items-center justify-center space-x-1">
         
-        <!-- Prev -->
-        <li>
-            <?php if ($pager->hasPrevious()) : ?>
-                <a href="<?= $pager->getPrevious() ?>"
-                   class="px-3 py-1 rounded-md bg-white border border-gray-300 text-gray-600 hover:bg-orange-500 hover:text-white transition">
-                    &laquo;
+        <?php if ($pager->hasPrevious()) : ?>
+            <!-- First Page -->
+            <li>
+                <a href="<?= $pager->getFirst() ?>" class="px-3 py-2 rounded-lg border border-gray-300 bg-white hover:bg-gray-50 text-gray-700 text-sm font-medium transition-colors">
+                    <i class="fas fa-angle-double-left"></i>
                 </a>
-            <?php else : ?>
-                <span class="px-3 py-1 rounded-md bg-gray-100 border border-gray-300 text-gray-400 cursor-not-allowed">
-                    &laquo;
-                </span>
-            <?php endif ?>
-        </li>
+            </li>
+            
+            <!-- Previous Page -->
+            <li>
+                <a href="<?= $pager->getPrevious() ?>" class="px-3 py-2 rounded-lg border border-gray-300 bg-white hover:bg-gray-50 text-gray-700 text-sm font-medium transition-colors">
+                    <i class="fas fa-angle-left"></i>
+                </a>
+            </li>
+        <?php endif ?>
 
-        <!-- Pages -->
         <?php foreach ($pager->links() as $link) : ?>
             <li>
-                <a href="<?= $link['uri'] ?>"
-                   class="px-3 py-1 rounded-md border text-sm font-medium transition
-                   <?= $link['active']
-                        ? 'bg-orange-500 border-orange-500 text-white'
-                        : 'bg-white border-gray-300 text-gray-600 hover:bg-orange-100' ?>">
-                    <?= $link['title'] ?>
-                </a>
+                <?php if ($link['active']) : ?>
+                    <span class="px-4 py-2 rounded-lg bg-orange-500 text-white text-sm font-semibold">
+                        <?= $link['title'] ?>
+                    </span>
+                <?php else : ?>
+                    <a href="<?= $link['uri'] ?>" class="px-4 py-2 rounded-lg border border-gray-300 bg-white hover:bg-gray-50 text-gray-700 text-sm font-medium transition-colors">
+                        <?= $link['title'] ?>
+                    </a>
+                <?php endif ?>
             </li>
         <?php endforeach ?>
 
-        <!-- Next -->
-        <li>
-            <?php if ($pager->hasNext()) : ?>
-                <a href="<?= $pager->getNext() ?>"
-                   class="px-3 py-1 rounded-md bg-white border border-gray-300 text-gray-600 hover:bg-orange-500 hover:text-white transition">
-                    &raquo;
+        <?php if ($pager->hasNext()) : ?>
+            <!-- Next Page -->
+            <li>
+                <a href="<?= $pager->getNext() ?>" class="px-3 py-2 rounded-lg border border-gray-300 bg-white hover:bg-gray-50 text-gray-700 text-sm font-medium transition-colors">
+                    <i class="fas fa-angle-right"></i>
                 </a>
-            <?php else : ?>
-                <span class="px-3 py-1 rounded-md bg-gray-100 border border-gray-300 text-gray-400 cursor-not-allowed">
-                    &raquo;
-                </span>
-            <?php endif ?>
-        </li>
-
+            </li>
+            
+            <!-- Last Page -->
+            <li>
+                <a href="<?= $pager->getLast() ?>" class="px-3 py-2 rounded-lg border border-gray-300 bg-white hover:bg-gray-50 text-gray-700 text-sm font-medium transition-colors">
+                    <i class="fas fa-angle-double-right"></i>
+                </a>
+            </li>
+        <?php endif ?>
+        
     </ul>
+    
+    <!-- Info -->
+    <div class="mt-3 text-center text-sm text-gray-600">
+        Menampilkan halaman <?= $pager->getCurrentPagenumber() ?> dari <?= $pager->getPageCount() ?>
+    </div>
 </nav>
-<?php endif ?>

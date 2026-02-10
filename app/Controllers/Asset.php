@@ -27,9 +27,40 @@ class Asset extends BaseController
         $type    = $this->request->getGet('type');
         $status  = $this->request->getGet('status');
 
-        $assets = $this->assetModel
-            ->filterAssets($keyword, $type, $status)
-            ->paginate(10, 'assets');
+        // ⭐ Build query dengan model (bukan builder)
+        if ($keyword) {
+            $this->assetModel->groupStart()
+                             ->like('asset_name', $keyword)
+                             ->orLike('asset_code', $keyword)
+                             ->orLike('brand', $keyword)
+                             ->orLike('serial_number', $keyword)
+                             ->groupEnd();
+        }
+
+        if ($type) {
+            $this->assetModel->where('asset_type', $type);
+        }
+
+        if ($status) {
+            $this->assetModel->where('status', $status);
+        }
+
+        // Order by
+        $this->assetModel->orderBy('created_at', 'DESC');
+
+        // ⭐ Pagination
+        $assets = $this->assetModel->paginate(10, 'default');
+
+        // ⭐ Statistik - Ambil semua data sekali
+        $allAssets = $this->assetModel->findAll();
+        
+        $totalAssets = count($allAssets);
+        $totalHardware = count(array_filter($allAssets, function($asset) {
+            return $asset['asset_type'] === 'hardware';
+        }));
+        $totalSoftware = count(array_filter($allAssets, function($asset) {
+            return $asset['asset_type'] === 'software';
+        }));
 
         $data = [
             'title' => 'Kelola Asset',
@@ -46,9 +77,9 @@ class Asset extends BaseController
             'status_filter' => $status,
 
             // Statistik
-            'total_assets'   => $this->assetModel->countAll(),
-            'total_hardware' => $this->assetModel->where('asset_type', 'hardware')->countAllResults(),
-            'total_software' => $this->assetModel->where('asset_type', 'software')->countAllResults(),
+            'total_assets'   => $totalAssets,
+            'total_hardware' => $totalHardware,
+            'total_software' => $totalSoftware,
         ];
 
         return view('asset/index', $data);
@@ -56,7 +87,7 @@ class Asset extends BaseController
 
     /**
      * ============================
-     * FORM TAMBAH ASSET (FIX ERROR)
+     * FORM TAMBAH ASSET
      * ============================
      */
     public function create()
@@ -133,8 +164,15 @@ class Asset extends BaseController
             return redirect()->to('/asset')->with('error', 'Asset tidak ditemukan');
         }
 
+        // Get maintenance logs for this asset
         $maintenanceLogModel = new \App\Models\MaintenanceLogModel();
-        $maintenanceLogs = $maintenanceLogModel->getLogsByAsset($id);
+        $maintenanceLogs = $maintenanceLogModel
+            ->select('maintenance_logs.*, users.full_name as technician_name, tickets.ticket_number')
+            ->join('users', 'users.user_id = maintenance_logs.technician_id', 'left')
+            ->join('tickets', 'tickets.ticket_id = maintenance_logs.ticket_id', 'left')
+            ->where('maintenance_logs.asset_id', $id)
+            ->orderBy('maintenance_logs.created_at', 'DESC')
+            ->findAll();
 
         $data = [
             'title' => 'Detail Asset',
@@ -232,12 +270,22 @@ class Asset extends BaseController
             return redirect()->to('/asset')->with('error', 'Asset tidak ditemukan');
         }
 
+        // Check if asset has related tickets
         $ticketModel = new \App\Models\TicketModel();
         $hasTickets = $ticketModel->where('asset_id', $id)->countAllResults() > 0;
 
         if ($hasTickets) {
             return redirect()->to('/asset')
                 ->with('error', 'Asset tidak dapat dihapus karena memiliki tiket terkait');
+        }
+
+        // Check if asset has maintenance logs
+        $maintenanceLogModel = new \App\Models\MaintenanceLogModel();
+        $hasLogs = $maintenanceLogModel->where('asset_id', $id)->countAllResults() > 0;
+
+        if ($hasLogs) {
+            return redirect()->to('/asset')
+                ->with('error', 'Asset tidak dapat dihapus karena memiliki log maintenance terkait');
         }
 
         $this->assetModel->delete($id);
@@ -267,11 +315,6 @@ class Asset extends BaseController
         ]);
     }
 
-    /**
-     * ============================
-     * EXPORT (COMING SOON)
-     * ============================
-     */
     public function export()
     {
         return redirect()->to('/asset')

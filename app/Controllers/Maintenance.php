@@ -26,199 +26,114 @@ class Maintenance extends BaseController
     }
 
     /**
-     * Display maintenance log list (Admin / Teknisi)
+     * Display maintenance log list (Admin/Teknisi)
      */
-    public function index()
-    {
-        $role   = $this->session->get('role');
-        $userId = $this->session->get('user_id');
+  public function index()
+{
+    $role   = $this->session->get('role');
+    $userId = $this->session->get('user_id');
 
-        $keyword = $this->request->getGet('keyword');
-        $month   = $this->request->getGet('month') ?: date('Y-m');
+    $keyword = $this->request->getGet('keyword');
+    $month   = $this->request->getGet('month') ?? date('Y-m');
 
-        // ⭐ PERBAIKAN: JOIN langsung ke assets (sesuai struktur DB)
+    // Query utama (list + pagination)
+    $this->maintenanceLogModel
+        ->select('maintenance_logs.*, assets.asset_name, assets.asset_code, users.full_name AS technician_name')
+        ->join('assets', 'assets.asset_id = maintenance_logs.asset_id')
+        ->join('users', 'users.user_id = maintenance_logs.technician_id');
+
+    // Filter role teknisi
+    if ($role === 'teknisi') {
         $this->maintenanceLogModel
-            ->select('maintenance_logs.*, 
-                     assets.asset_name, 
-                     assets.asset_code,
-                     tickets.ticket_number,
-                     users.full_name as technician_name')
-            ->join('assets', 'assets.asset_id = maintenance_logs.asset_id', 'left')
-            ->join('tickets', 'tickets.ticket_id = maintenance_logs.ticket_id', 'left')
-            ->join('users', 'users.user_id = maintenance_logs.technician_id', 'left')
-            ->orderBy('maintenance_logs.created_at', 'DESC');
-
-        // Filter role
-        if ($role === 'teknisi') {
-            $this->maintenanceLogModel->where('maintenance_logs.technician_id', $userId);
-        }
-
-        // Filter bulan
-        if ($month) {
-            $this->maintenanceLogModel->like('DATE(maintenance_logs.created_at)', $month);
-        }
-
-        // Search
-        if ($keyword) {
-            $this->maintenanceLogModel->groupStart()
-                    ->like('assets.asset_name', $keyword)
-                    ->orLike('maintenance_logs.diagnosis', $keyword)
-                    ->orLike('maintenance_logs.action_taken', $keyword)
-                    ->groupEnd();
-        }
-
-        // Get data dengan pagination
-        $logs = $this->maintenanceLogModel->paginate(10, 'default');
-
-        // Statistik
-        $currentMonth = $month ?? date('Y-m');
-        
-        // Total logs
-        if ($role === 'teknisi') {
-            $totalLogsBuilder = $this->maintenanceLogModel->builder();
-            $totalLogs = $totalLogsBuilder->where('technician_id', $userId)->countAllResults();
-        } else {
-            $totalLogs = $this->maintenanceLogModel->countAll();
-        }
-        
-        // Monthly logs
-        $monthlyLogsBuilder = $this->maintenanceLogModel->builder();
-        if ($role === 'teknisi') {
-            $monthlyLogsBuilder->where('technician_id', $userId);
-        }
-        $monthlyLogs = $monthlyLogsBuilder->like('DATE(created_at)', $currentMonth)
-                                          ->countAllResults();
-        
-        // Monthly cost
-        $monthlyCostBuilder = $this->maintenanceLogModel->builder();
-        if ($role === 'teknisi') {
-            $monthlyCostBuilder->where('technician_id', $userId);
-        }
-        $monthlyCostResult = $monthlyCostBuilder->selectSum('cost')
-                                                ->like('DATE(created_at)', $currentMonth)
-                                                ->get()
-                                                ->getRowArray();
-        $monthlyCost = $monthlyCostResult['cost'] ?? 0;
-
-        $data = [
-            'title' => 'Log Maintenance',
-            'user'  => [
-                'full_name'  => $this->session->get('full_name'),
-                'role'       => $role,
-                'department' => $this->session->get('department'),
-            ],
-            'logs'   => $logs,
-            'pager'  => $this->maintenanceLogModel->pager,
-            'keyword' => $keyword,
-            'month_filter' => $month,
-
-            // Statistik
-            'total_logs'   => $totalLogs,
-            'monthly_logs' => $monthlyLogs,
-            'monthly_cost' => $monthlyCost,
-        ];
-
-        return view('maintenance/index', $data);
+            ->where('maintenance_logs.technician_id', $userId);
     }
 
-    
-    /**
-     * My work history (Teknisi)
-     */
-    public function history()
-    {
-        $userId = $this->session->get('user_id');
-
-        $keyword = $this->request->getGet('keyword');
-        $month   = $this->request->getGet('month') ?: date('Y-m');
-
-        // Build query
+    // Filter bulan
+    if ($month) {
         $this->maintenanceLogModel
-            ->select('maintenance_logs.*, 
-                     assets.asset_name, 
-                     assets.asset_code,
-                     tickets.ticket_number')
-            ->join('assets', 'assets.asset_id = maintenance_logs.asset_id', 'left')
-            ->join('tickets', 'tickets.ticket_id = maintenance_logs.ticket_id', 'left')
-            ->where('maintenance_logs.technician_id', $userId)
-            ->orderBy('maintenance_logs.created_at', 'DESC');
-
-        if ($month) {
-            $this->maintenanceLogModel->like('DATE(maintenance_logs.created_at)', $month);
-        }
-
-        if ($keyword) {
-            $this->maintenanceLogModel->groupStart()
-                    ->like('assets.asset_name', $keyword)
-                    ->orLike('maintenance_logs.diagnosis', $keyword)
-                    ->groupEnd();
-        }
-
-        // Get data dengan pagination
-        $logs = $this->maintenanceLogModel->paginate(10, 'default');
-
-        // Statistik
-        $currentMonth = $month ?? date('Y-m');
-        
-        $totalWorkBuilder = $this->maintenanceLogModel->builder();
-        $totalWork = $totalWorkBuilder->where('technician_id', $userId)->countAllResults();
-        
-        $monthlyWorkBuilder = $this->maintenanceLogModel->builder();
-        $monthlyWork = $monthlyWorkBuilder->where('technician_id', $userId)
-                                          ->like('DATE(created_at)', $currentMonth)
-                                          ->countAllResults();
-
-        $data = [
-            'title' => 'Riwayat Pekerjaan Saya',
-            'user'  => [
-                'full_name'  => $this->session->get('full_name'),
-                'role'       => $this->session->get('role'),
-                'department' => $this->session->get('department'),
-            ],
-            'logs'   => $logs,
-            'pager'  => $this->maintenanceLogModel->pager,
-            'keyword' => $keyword,
-            'month_filter' => $month,
-
-            'total_work'   => $totalWork,
-            'monthly_work' => $monthlyWork,
-        ];
-
-        return view('maintenance/history', $data);
+            ->like('maintenance_logs.created_at', $month);
     }
 
+    // Search
+    if ($keyword) {
+        $this->maintenanceLogModel
+            ->groupStart()
+                ->like('assets.asset_name', $keyword)
+                ->orLike('maintenance_logs.diagnosis', $keyword)
+                ->orLike('maintenance_logs.action_taken', $keyword)
+            ->groupEnd();
+    }
+
+    // PAGINATION
+    $logs = $this->maintenanceLogModel
+        ->orderBy('maintenance_logs.created_at', 'DESC')
+        ->paginate(10);
+
+    // ✅ AMBIL PAGER SEBELUM RESET MODEL
+    $pager = $this->maintenanceLogModel->pager;
+
+    // 🔁 MODEL BARU KHUSUS STATISTIK
+    $statModel = new \App\Models\MaintenanceLogModel();
+
+    $data = [
+        'title' => 'Log Maintenance',
+        'user' => [
+            'full_name'  => $this->session->get('full_name'),
+            'role'       => $role,
+            'department' => $this->session->get('department'),
+        ],
+        'logs'   => $logs,
+        'pager'  => $pager,          // ✅ TIDAK NULL
+        'keyword'=> $keyword,
+        'month'  => $month,          // konsisten utk view
+
+        // Statistik
+        'total_logs' => $role === 'teknisi'
+            ? $statModel->where('technician_id', $userId)->countAllResults()
+            : $statModel->countAllResults(),
+
+        'this_month' => $role === 'teknisi'
+            ? $statModel->getMyMaintenanceThisMonth($userId)
+            : $statModel->getMaintenanceThisMonth(),
+
+        'total_cost' => $statModel->getTotalCostThisMonth(),
+    ];
+
+    return view('maintenance/index', $data);
+}
+
+
     /**
-     * Show update form for a ticket
+     * Show update form (from ticket)
      */
     public function update($ticketId)
     {
         $role = $this->session->get('role');
         
         if (!in_array($role, ['admin', 'teknisi'])) {
-            return redirect()->to('/maintenance')
+            return redirect()->to('/dashboard')
                            ->with('error', 'Anda tidak memiliki akses');
         }
 
-        // Get ticket detail
         $ticket = $this->ticketModel->getTicketDetail($ticketId);
 
         if (!$ticket) {
-            return redirect()->to('/maintenance')
+            return redirect()->to('/ticket')
                            ->with('error', 'Tiket tidak ditemukan');
         }
 
-        // Get existing maintenance logs for this ticket
-        $logs = $this->maintenanceLogModel->getLogsByTicket($ticketId);
+        // Check if already has maintenance log for this ticket
+        $existingLog = $this->maintenanceLogModel->where('ticket_id', $ticketId)->first();
 
         $data = [
-            'title' => 'Update Perbaikan',
+            'title' => 'Update Maintenance',
             'user' => [
                 'full_name' => $this->session->get('full_name'),
                 'role' => $this->session->get('role'),
                 'department' => $this->session->get('department'),
             ],
             'ticket' => $ticket,
-            'logs' => $logs,
+            'existing_log' => $existingLog,
         ];
 
         return view('maintenance/update', $data);
@@ -232,28 +147,26 @@ class Maintenance extends BaseController
         $role = $this->session->get('role');
         
         if (!in_array($role, ['admin', 'teknisi'])) {
-            return redirect()->to('/maintenance')
+            return redirect()->to('/dashboard')
                            ->with('error', 'Anda tidak memiliki akses');
         }
 
-        // Get ticket untuk ambil asset_id
         $ticket = $this->ticketModel->find($ticketId);
-        
+
         if (!$ticket) {
-            return redirect()->back()
+            return redirect()->to('/ticket')
                            ->with('error', 'Tiket tidak ditemukan');
         }
 
         $validation = \Config\Services::validation();
 
-        // ⭐ PERBAIKAN: Sesuai field di database
         $rules = [
             'diagnosis' => 'required|min_length[10]',
             'action_taken' => 'required|min_length[10]',
-            'parts_used' => 'permit_empty|max_length[255]',
-            'cost' => 'required|numeric',
-            'start_time' => 'required|valid_date',
-            'end_time' => 'required|valid_date',
+            'parts_used' => 'permit_empty',
+            'cost' => 'permit_empty|decimal',
+            'start_time' => 'permit_empty|valid_date',
+            'end_time' => 'permit_empty|valid_date',
         ];
 
         if (!$this->validate($rules)) {
@@ -262,29 +175,169 @@ class Maintenance extends BaseController
                            ->with('errors', $validation->getErrors());
         }
 
-        // ⭐ PERBAIKAN: Field sesuai struktur database
         $data = [
             'ticket_id' => $ticketId,
-            'asset_id' => $ticket['asset_id'], // Ambil dari ticket
+            'asset_id' => $ticket['asset_id'],
             'technician_id' => $this->session->get('user_id'),
             'diagnosis' => $this->request->getPost('diagnosis'),
             'action_taken' => $this->request->getPost('action_taken'),
             'parts_used' => $this->request->getPost('parts_used'),
-            'cost' => $this->request->getPost('cost'),
-            'start_time' => $this->request->getPost('start_time'),
-            'end_time' => $this->request->getPost('end_time'),
+            'cost' => $this->request->getPost('cost') ?: null,
+            'start_time' => $this->request->getPost('start_time') 
+                ? date('Y-m-d H:i:s', strtotime($this->request->getPost('start_time'))) 
+                : null,
+            'end_time' => $this->request->getPost('end_time') 
+                ? date('Y-m-d H:i:s', strtotime($this->request->getPost('end_time'))) 
+                : null,
         ];
 
-        if ($this->maintenanceLogModel->insert($data)) {
-            // Update ticket status to in_progress
-            $this->ticketModel->update($ticketId, ['status' => 'in_progress']);
+        // Check if already has log for this ticket
+        $existingLog = $this->maintenanceLogModel->where('ticket_id', $ticketId)->first();
 
-            return redirect()->to('/maintenance/update/' . $ticketId)
-                           ->with('success', 'Log maintenance berhasil ditambahkan');
+        if ($existingLog) {
+            // Update existing log
+            if ($this->maintenanceLogModel->update($existingLog['log_id'], $data)) {
+                // Update ticket status to completed
+                $this->ticketModel->update($ticketId, ['status' => 'completed']);
+                
+                return redirect()->to('/ticket/detail/' . $ticketId)
+                               ->with('success', 'Log maintenance berhasil diperbarui');
+            }
         } else {
-            return redirect()->back()
-                           ->withInput()
-                           ->with('error', 'Gagal menyimpan log maintenance');
+            // Insert new log
+            if ($this->maintenanceLogModel->insert($data)) {
+                // Update ticket status
+                $newStatus = $this->request->getPost('ticket_status') ?: 'completed';
+                $this->ticketModel->update($ticketId, ['status' => $newStatus]);
+                
+                return redirect()->to('/ticket/detail/' . $ticketId)
+                               ->with('success', 'Log maintenance berhasil disimpan');
+            }
+        }
+
+        return redirect()->back()
+                       ->withInput()
+                       ->with('error', 'Gagal menyimpan log maintenance');
+    }
+
+    /**
+     * Delete maintenance log (Admin only)
+     */
+    public function delete($id)
+    {
+        $role = $this->session->get('role');
+        
+        if ($role !== 'admin') {
+            return redirect()->to('/maintenance')
+                           ->with('error', 'Hanya admin yang dapat menghapus log');
+        }
+
+        $log = $this->maintenanceLogModel->find($id);
+
+        if (!$log) {
+            return redirect()->to('/maintenance')
+                           ->with('error', 'Log tidak ditemukan');
+        }
+
+        if ($this->maintenanceLogModel->delete($id)) {
+            return redirect()->to('/maintenance')
+                           ->with('success', 'Log maintenance berhasil dihapus');
+        } else {
+            return redirect()->to('/maintenance')
+                           ->with('error', 'Gagal menghapus log');
         }
     }
+
+    /**
+     * View log detail
+     */
+    public function detail($id)
+    {
+        $log = $this->maintenanceLogModel->select('maintenance_logs.*, assets.asset_name, assets.asset_code, users.full_name as technician_name, tickets.ticket_number, tickets.title as ticket_title')
+                    ->join('assets', 'assets.asset_id = maintenance_logs.asset_id')
+                    ->join('users', 'users.user_id = maintenance_logs.technician_id')
+                    ->join('tickets', 'tickets.ticket_id = maintenance_logs.ticket_id', 'left')
+                    ->where('maintenance_logs.log_id', $id)
+                    ->first();
+
+        if (!$log) {
+            return redirect()->to('/maintenance')
+                           ->with('error', 'Log tidak ditemukan');
+        }
+
+        $data = [
+            'title' => 'Detail Log Maintenance',
+            'user' => [
+                'full_name' => $this->session->get('full_name'),
+                'role' => $this->session->get('role'),
+                'department' => $this->session->get('department'),
+            ],
+            'log' => $log,
+        ];
+
+        return view('maintenance/detail', $data);
+    }
+
+    /**
+     * My work history (for teknisi)
+     */
+   public function history()
+{
+    $userId = $this->session->get('user_id');
+
+    $keyword = $this->request->getGet('keyword');
+    $month   = $this->request->getGet('month') ?? date('Y-m');
+
+    $this->maintenanceLogModel
+        ->select('maintenance_logs.*, assets.asset_name, assets.asset_code')
+        ->join('assets', 'assets.asset_id = maintenance_logs.asset_id')
+        ->where('maintenance_logs.technician_id', $userId);
+
+    if ($month) {
+        $this->maintenanceLogModel
+            ->like('maintenance_logs.created_at', $month);
+    }
+
+    if ($keyword) {
+        $this->maintenanceLogModel
+            ->groupStart()
+                ->like('assets.asset_name', $keyword)
+                ->orLike('maintenance_logs.diagnosis', $keyword)
+            ->groupEnd();
+    }
+
+    // PAGINATION
+    $logs = $this->maintenanceLogModel
+        ->orderBy('maintenance_logs.created_at', 'DESC')
+        ->paginate(10);
+
+    // ✅ AMBIL PAGER DI SINI
+    $pager = $this->maintenanceLogModel->pager;
+
+    // 🔁 MODEL BARU KHUSUS STATISTIK
+    $statModel = new \App\Models\MaintenanceLogModel();
+
+    $data = [
+        'title' => 'Riwayat Pekerjaan Saya',
+        'user' => [
+            'full_name'  => $this->session->get('full_name'),
+            'role'       => $this->session->get('role'),
+            'department' => $this->session->get('department'),
+        ],
+        'logs'   => $logs,
+        'pager'  => $pager,      // ✅ TIDAK NULL
+        'keyword'=> $keyword,
+        'month'  => $month,
+
+        'total_work' => $statModel
+            ->where('technician_id', $userId)
+            ->countAllResults(),
+
+        'this_month' => $statModel
+            ->getMyMaintenanceThisMonth($userId),
+    ];
+
+    return view('maintenance/history', $data);
+}
+
 }
