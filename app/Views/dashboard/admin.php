@@ -101,7 +101,7 @@
                 <div class="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                 <div class="relative z-10">
                     <div class="flex items-start justify-between mb-3">
-                        <div class="flex-1">
+                        <div class="ffflex-1">
                             <p class="text-emerald-100 text-xs font-semibold uppercase tracking-wider mb-1">Maintenance</p>
                             <h3 class="text-3xl sm:text-4xl lg:text-5xl font-bold leading-none mb-1"><?= $maintenance_this_month ?></h3>
                             <p class="text-emerald-100/80 text-xs"><?= date('F Y') ?></p>
