@@ -11,8 +11,10 @@
                     <!-- Company Info -->
                     <div class="text-center md:text-left">
                         <div class="flex items-center justify-center md:justify-start mb-4">
-                            <div class="bg-white rounded-lg p-2.5 mr-3 shadow-lg">
-                                <i class="fas fa-building text-orange-500 text-xl"></i>
+                           <div class="bg-white rounded-lg p-2 shadow-lg flex items-center justify-center">
+                                <img src="<?= base_url('Assets/images/Logo.png') ?>" 
+                                    alt="Logo"
+                                    class="h-6 md:h-8 w-auto object-contain">
                             </div>
                             <div>
                                 <h3 class="text-white font-bold text-lg">BNI</h3>
@@ -97,7 +99,7 @@
                     <div class="text-center md:text-left">
                         <p class="text-orange-50 text-sm">
                             &copy; <?= date('Y') ?> 
-                            <span class="text-white font-semibold">PT Bank Negara Indonesia (Persero) Tbk</span>
+                            <span class="text-white font-semibold">Unit Logistics & Human Capital</span>
                         </p>
                         <p class="text-orange-200 text-xs mt-1">
                             All rights reserved. Version 1.0.0

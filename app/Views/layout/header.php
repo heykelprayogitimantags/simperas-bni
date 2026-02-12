@@ -76,9 +76,11 @@
                     
                     <!-- Logo -->
                     <div class="flex items-center">
-                        <div class="bg-white rounded-lg p-2 shadow-lg">
-                            <i class="fas fa-toolbox text-orange-500 text-xl md:text-2xl"></i>
-                        </div>
+                       <div class="bg-white rounded-lg p-2 shadow-lg flex items-center justify-center">
+                                <img src="<?= base_url('Assets/images/Logo.png') ?>" 
+                                    alt="Logo"
+                                    class="h-6 md:h-8 w-auto object-contain">
+                            </div>
                         <div class="ml-3 hidden sm:block">
                             <h1 class="text-white font-bold text-base md:text-lg leading-tight">
                                 Sistem Manajemen Perawatan

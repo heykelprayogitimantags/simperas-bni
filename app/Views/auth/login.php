@@ -466,10 +466,10 @@
                 <img src="<?= base_url('assets/images/Logo.png') ?>" alt="Logo SIMPERAS">
             </div>
             <h2 class="app-title">SIMPERAS</h2>
-            <p class="app-subtitle">Sistem Manajemen Perawatan Aset</p>
+            <p class="app-subtitle">Sistem Manajemen Perawatan Aset BNI</p>
         </div>
 
-        <!-- Login Card -->
+        
         <div class="login-card">
             
             <!-- Header -->
