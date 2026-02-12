@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - SIMPERAS</title>
+    <title>Login-SIMPERAS</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
@@ -466,7 +466,7 @@
                 <img src="<?= base_url('assets/images/Logo.png') ?>" alt="Logo SIMPERAS">
             </div>
             <h2 class="app-title">SIMPERAS</h2>
-            <p class="app-subtitle">Sistem Informasi Manajemen Perawatan & Aset</p>
+            <p class="app-subtitle">Sistem Manajemen Perawatan Aset</p>
         </div>
 
         <!-- Login Card -->
