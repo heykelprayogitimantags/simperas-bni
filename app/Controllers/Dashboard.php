@@ -49,7 +49,6 @@ class Dashboard extends BaseController
      */
     public function admin()
     {
-        // Get statistics
         $data = [
             'title' => 'Dashboard Admin',
             'user' => [
@@ -115,28 +114,41 @@ class Dashboard extends BaseController
                 'department' => $this->session->get('department'),
             ],
             
-            // My assigned tickets
+            // Ticket statistics - nested format for view compatibility
             'my_tickets' => [
                 'pending' => $this->ticketModel->where('status', 'pending')->countAllResults(),
                 'in_progress' => $this->ticketModel->where('status', 'in_progress')->countAllResults(),
                 'completed' => $this->ticketModel->where('status', 'completed')->countAllResults(),
             ],
             
-            // My maintenance logs
+            // Individual counts for teknisi_enhanced.php view
+            'pending_tickets' => $this->ticketModel->where('status', 'pending')->countAllResults(),
+            'in_progress_tickets' => $this->ticketModel->where('status', 'in_progress')->countAllResults(),
+            'completed_this_month' => $this->maintenanceLogModel->getMyMaintenanceThisMonth($userId),
+            'total_maintenance' => $this->maintenanceLogModel->where('technician_id', $userId)->countAllResults(),
+            
+            // Maintenance counts (for old view)
             'my_maintenance_count' => $this->maintenanceLogModel->where('technician_id', $userId)->countAllResults(),
             'my_maintenance_this_month' => $this->maintenanceLogModel->getMyMaintenanceThisMonth($userId),
             
-            // Recent tickets to work on
+            // Tickets to work on
             'assigned_tickets' => $this->ticketModel->getTicketsForTechnician(10),
+            'pending_work' => $this->ticketModel->getTicketsForTechnician(5),
             
             // My recent work
             'my_recent_work' => $this->maintenanceLogModel->getMyRecentLogs($userId, 5),
+            'recent_work' => $this->maintenanceLogModel->getMyRecentLogs($userId, 5),
             
-            // Asset statistics
+            // Damaged assets
             'assets_need_attention' => [
                 'rusak_ringan' => $this->assetModel->where('status', 'rusak_ringan')->countAllResults(),
                 'rusak_berat' => $this->assetModel->where('status', 'rusak_berat')->countAllResults(),
             ],
+            'damaged_assets' => $this->assetModel->whereIn('status', ['rusak_ringan'])->findAll(),
+            'heavily_damaged' => $this->assetModel->where('status', 'rusak_berat')->countAllResults(),
+            
+            // Average duration
+            'avg_duration' => $this->calculateAvgDuration($userId),
         ];
 
         return view('dashboard/teknisi', $data);
@@ -157,7 +169,7 @@ class Dashboard extends BaseController
                 'department' => $this->session->get('department'),
             ],
             
-            // My tickets
+            // My tickets - nested format for view
             'my_tickets' => [
                 'total' => $this->ticketModel->where('reported_by', $userId)->countAllResults(),
                 'pending' => $this->ticketModel->where('reported_by', $userId)->where('status', 'pending')->countAllResults(),
@@ -165,15 +177,55 @@ class Dashboard extends BaseController
                 'completed' => $this->ticketModel->where('reported_by', $userId)->where('status', 'completed')->countAllResults(),
             ],
             
-            // My recent tickets
-            'my_recent_tickets' => $this->ticketModel->getMyTickets($userId, 5),
+            // Individual counts (for compatibility)
+            'total_tickets' => $this->ticketModel->where('reported_by', $userId)->countAllResults(),
+            'pending_tickets' => $this->ticketModel->where('reported_by', $userId)->where('status', 'pending')->countAllResults(),
+            'in_progress_tickets' => $this->ticketModel->where('reported_by', $userId)->where('status', 'in_progress')->countAllResults(),
+            'completed_tickets' => $this->ticketModel->where('reported_by', $userId)->where('status', 'completed')->countAllResults(),
             
-            // Quick stats
+            // Recent tickets
+            'my_recent_tickets' => $this->ticketModel->getMyTickets($userId, 5),
+            'recent_tickets' => $this->ticketModel->getMyTickets($userId, 5),
+            
+            // Asset info
             'total_assets' => $this->assetModel->countAll(),
-            'assets_available' => $this->assetModel->where('status', 'baik')->countAllResults(),
+            'available_assets' => $this->assetModel->where('status', 'baik')->countAllResults(),
         ];
 
         return view('dashboard/pegawai', $data);
+    }
+
+    /**
+     * Calculate average maintenance duration
+     */
+    private function calculateAvgDuration($technicianId)
+    {
+        $logs = $this->maintenanceLogModel
+            ->select('start_time, end_time')
+            ->where('technician_id', $technicianId)
+            ->where('start_time IS NOT NULL')
+            ->where('end_time IS NOT NULL')
+            ->findAll();
+        
+        if (empty($logs)) {
+            return 0;
+        }
+        
+        $totalDuration = 0;
+        $count = 0;
+        
+        foreach ($logs as $log) {
+            if ($log['start_time'] && $log['end_time']) {
+                $start = strtotime($log['start_time']);
+                $end = strtotime($log['end_time']);
+                if ($end > $start) {
+                    $totalDuration += ($end - $start) / 60; // minutes
+                    $count++;
+                }
+            }
+        }
+        
+        return $count > 0 ? round($totalDuration / $count) : 0;
     }
 
     /**

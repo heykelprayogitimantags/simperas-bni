@@ -8,11 +8,24 @@
     <div class="flex justify-between items-center mb-6">
         <div>
             <h2 class="text-3xl font-bold text-gray-800">Jadwal Perawatan</h2>
-            <p class="text-gray-600 mt-1">Kelola jadwal maintenance preventif & korektif</p>
+            <p class="text-gray-600 mt-1">
+                <?php if ($user['role'] === 'admin'): ?>
+                    Kelola jadwal maintenance preventif & korektif
+                <?php else: ?>
+                    Lihat jadwal maintenance yang ditugaskan kepada Anda
+                <?php endif; ?>
+            </p>
         </div>
-        <a href="<?= base_url('schedule/create') ?>" class="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white px-6 py-3 rounded-lg font-semibold shadow-lg transition-all duration-200 transform hover:scale-105">
-            <i class="fas fa-calendar-plus mr-2"></i> Buat Jadwal
-        </a>
+        <?php if ($user['role'] === 'admin'): ?>
+            <a href="<?= base_url('schedule/create') ?>" class="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white px-6 py-3 rounded-lg font-semibold shadow-lg transition-all duration-200 transform hover:scale-105">
+                <i class="fas fa-calendar-plus mr-2"></i> Buat Jadwal
+            </a>
+        <?php else: ?>
+            <div class="bg-blue-100 border border-blue-300 text-blue-700 px-4 py-2 rounded-lg text-sm font-semibold flex items-center gap-2">
+                <i class="fas fa-eye"></i>
+                <span>View Only Mode</span>
+            </div>
+        <?php endif; ?>
     </div>
 
     <!-- Flash Messages -->
@@ -230,18 +243,22 @@
                                 </td>
                                 <td class="px-6 py-4">
                                     <div class="flex items-center justify-center gap-2">
-                                        <a href="<?= base_url('schedule/edit/' . $schedule['schedule_id']) ?>" 
-                                           class="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded text-xs font-medium transition-colors"
-                                           title="Edit">
-                                            <i class="fas fa-edit"></i>
-                                        </a>
-                                        <?php if ($schedule['status'] === 'scheduled'): ?>
-                                            <a href="<?= base_url('schedule/delete/' . $schedule['schedule_id']) ?>" 
-                                               class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-xs font-medium transition-colors"
-                                               onclick="return confirmDelete('Apakah Anda yakin ingin menghapus jadwal ini?')"
-                                               title="Hapus">
-                                                <i class="fas fa-trash"></i>
+                                        <?php if ($user['role'] === 'admin'): ?>
+                                            <a href="<?= base_url('schedule/edit/' . $schedule['schedule_id']) ?>" 
+                                               class="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded text-xs font-medium transition-colors"
+                                               title="Edit">
+                                                <i class="fas fa-edit"></i>
                                             </a>
+                                            <?php if ($schedule['status'] === 'scheduled'): ?>
+                                                <a href="<?= base_url('schedule/delete/' . $schedule['schedule_id']) ?>" 
+                                                   class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-xs font-medium transition-colors"
+                                                   onclick="return confirmDelete('Apakah Anda yakin ingin menghapus jadwal ini?')"
+                                                   title="Hapus">
+                                                    <i class="fas fa-trash"></i>
+                                                </a>
+                                            <?php endif; ?>
+                                        <?php else: ?>
+                                            <span class="text-gray-400 text-xs italic">View Only</span>
                                         <?php endif; ?>
                                     </div>
                                 </td>

@@ -231,29 +231,7 @@
                                 </div>
                             </div>
                             
-                            <!-- Menu Items -->
-                            <div class="py-2">
-                                <a href="<?= base_url('profile') ?>" class="flex items-center px-4 py-2.5 text-gray-700 hover:bg-orange-50 transition-colors">
-                                    <div class="bg-orange-100 rounded-lg p-2 mr-3">
-                                        <i class="fas fa-user-circle text-orange-600"></i>
-                                    </div>
-                                    <span class="font-medium text-sm">Profil Saya</span>
-                                </a>
-                                
-                                <a href="<?= base_url('settings') ?>" class="flex items-center px-4 py-2.5 text-gray-700 hover:bg-orange-50 transition-colors">
-                                    <div class="bg-gray-100 rounded-lg p-2 mr-3">
-                                        <i class="fas fa-cog text-gray-600"></i>
-                                    </div>
-                                    <span class="font-medium text-sm">Pengaturan</span>
-                                </a>
-                                
-                                <a href="<?= base_url('help') ?>" class="flex items-center px-4 py-2.5 text-gray-700 hover:bg-orange-50 transition-colors">
-                                    <div class="bg-green-100 rounded-lg p-2 mr-3">
-                                        <i class="fas fa-question-circle text-green-600"></i>
-                                    </div>
-                                    <span class="font-medium text-sm">Bantuan</span>
-                                </a>
-                            </div>
+                            <!-- Menu Items --
                             
                             <!-- Logout -->
                             <div class="border-t border-gray-200">

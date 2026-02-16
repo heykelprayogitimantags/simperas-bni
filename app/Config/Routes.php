@@ -17,7 +17,7 @@ $routes->group('', ['filter' => 'csrf'], function($routes) {
 
 $routes->get('logout', 'Auth::logout');
 
-// Protected
+// Protected Routes
 $routes->group('', ['filter' => 'auth'], function($routes) {
 
     // Dashboard
@@ -37,46 +37,6 @@ $routes->group('', ['filter' => 'auth'], function($routes) {
         $routes->get('delete/(:num)', 'Asset::delete/$1');
     });
 
-    // Ticket
-    $routes->group('ticket', function($routes) {
-        $routes->get('/', 'Ticket::index');
-        $routes->get('create', 'Ticket::create');
-        $routes->post('store', 'Ticket::store');
-        $routes->get('detail/(:num)', 'Ticket::detail/$1');
-        $routes->get('my-tickets', 'Ticket::myTickets');
-        $routes->post('update-status/(:num)', 'Ticket::updateStatus/$1', ['filter' => 'auth:admin,teknisi']);
-        $routes->get('delete/(:num)', 'Ticket::delete/$1', ['filter' => 'auth:admin']);
-    });
-
-    // Maintenance
-    $routes->group('maintenance', ['filter' => 'auth:teknisi,admin'], function($routes) {
-        $routes->get('/', 'Maintenance::index');
-        $routes->get('history', 'Maintenance::history');
-        $routes->get('detail/(:num)', 'Maintenance::detail/$1');
-        $routes->get('update/(:num)', 'Maintenance::update/$1');
-        $routes->post('save/(:num)', 'Maintenance::save/$1');
-    });
-
-    // Schedule (Admin)
-    $routes->group('schedule', ['filter' => 'auth:admin'], function($routes) {
-        $routes->get('/', 'Schedule::index');
-        $routes->get('create', 'Schedule::create');
-        $routes->post('store', 'Schedule::store');
-        $routes->get('edit/(:num)', 'Schedule::edit/$1');
-        $routes->post('update/(:num)', 'Schedule::update/$1');
-        $routes->get('delete/(:num)', 'Schedule::delete/$1');
-    });
-
-    // Report (Admin)
-    $routes->group('report', ['filter' => 'auth:admin'], function($routes) {
-        $routes->get('/', 'Report::index');
-        $routes->get('assets', 'Report::assets');
-        $routes->get('maintenance', 'Report::maintenance');
-        $routes->get('tickets', 'Report::tickets');
-        $routes->post('generate', 'Report::generate');
-        $routes->get('export/(:any)', 'Report::export/$1');
-    });
-
     // User (Admin)
     $routes->group('user', ['filter' => 'auth:admin'], function($routes) {
         $routes->get('/', 'User::index');
@@ -85,9 +45,51 @@ $routes->group('', ['filter' => 'auth'], function($routes) {
         $routes->get('edit/(:num)', 'User::edit/$1');
         $routes->post('update/(:num)', 'User::update/$1');
         $routes->get('toggle-status/(:num)', 'User::toggleStatus/$1');
+        $routes->get('delete/(:num)', 'User::delete/$1');
+        $routes->get('reset-password/(:num)', 'User::resetPassword/$1');
     });
 
-    // Profile
+    // Ticket (All)
+    $routes->group('ticket', function($routes) {
+        $routes->get('/', 'Ticket::index');
+        $routes->get('my-tickets', 'Ticket::myTickets');
+        $routes->get('detail/(:num)', 'Ticket::detail/$1');
+        $routes->get('create', 'Ticket::create');
+        $routes->post('store', 'Ticket::store');
+        $routes->post('update-status/(:num)', 'Ticket::updateStatus/$1', ['filter' => 'auth:admin,teknisi']);
+        $routes->get('delete/(:num)', 'Ticket::delete/$1', ['filter' => 'auth:admin']);
+    });
+
+    // Maintenance (Admin & Teknisi)
+    $routes->group('maintenance', ['filter' => 'auth:teknisi,admin'], function($routes) {
+        $routes->get('/', 'Maintenance::index');
+        $routes->get('detail/(:num)', 'Maintenance::detail/$1');
+        $routes->get('update/(:num)', 'Maintenance::update/$1');
+        $routes->post('save/(:num)', 'Maintenance::save/$1');
+        $routes->get('history', 'Maintenance::history');
+        $routes->get('delete/(:num)', 'Maintenance::delete/$1', ['filter' => 'auth:admin']);
+    });
+
+    // Schedule (Admin CRUD, Teknisi View)
+    $routes->group('schedule', function($routes) {
+        $routes->get('/', 'Schedule::index', ['filter' => 'auth:admin,teknisi']);
+        $routes->get('calendar', 'Schedule::calendar', ['filter' => 'auth:admin,teknisi']);
+        $routes->get('create', 'Schedule::create', ['filter' => 'auth:admin']);
+        $routes->post('store', 'Schedule::store', ['filter' => 'auth:admin']);
+        $routes->get('edit/(:num)', 'Schedule::edit/$1', ['filter' => 'auth:admin']);
+        $routes->post('update/(:num)', 'Schedule::update/$1', ['filter' => 'auth:admin']);
+        $routes->get('delete/(:num)', 'Schedule::delete/$1', ['filter' => 'auth:admin']);
+    });
+
+    // Report (Admin)
+    $routes->group('report', ['filter' => 'auth:admin'], function($routes) {
+        $routes->get('/', 'Report::index');
+        $routes->get('assets', 'Report::assets');
+        $routes->get('maintenance', 'Report::maintenance');
+        $routes->get('tickets', 'Report::tickets');
+    });
+
+    // Profile (All)
     $routes->get('profile', 'Profile::index');
     $routes->post('profile/update', 'Profile::update');
     $routes->post('profile/change-password', 'Profile::changePassword');
