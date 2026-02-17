@@ -249,11 +249,13 @@
                     </div>
                 <?php endforeach; ?>
             </div>
-
-            <!-- Pagination -->
+             <!-- Pagination -->
+        <?php if (!empty($tickets)): ?>
             <div class="bg-gray-50 px-6 py-4 border-t border-gray-200">
-                <?= $pager->links('default', 'default_full') ?>
+                 <?= $pager->links('default', 'tailwind_pagination') ?>
             </div>
+        <?php endif; ?>
+    </div>
         <?php endif; ?>
 
     </div>
