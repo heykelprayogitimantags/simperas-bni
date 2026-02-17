@@ -314,7 +314,7 @@ class Maintenance extends BaseController
             
             // My statistics
             'total_work' => $this->maintenanceLogModel->where('technician_id', $userId)->countAllResults(),
-            'this_month' => $this->maintenanceLogModel->getMyMaintenanceThisMonth($userId),
+            'month' => $this->maintenanceLogModel->getMyMaintenanceThisMonth($userId),
         ];
 
         return view('maintenance/history', $data);

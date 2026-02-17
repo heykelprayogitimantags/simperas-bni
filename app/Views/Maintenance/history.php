@@ -221,9 +221,12 @@
             </div>
 
             <!-- Pagination -->
-            <div class="bg-gray-50 px-6 py-4 border-t border-gray-200">
-                <?= $pager->links('default', 'tailwind_pagination') ?>
-            </div>
+                <<!-- Pagination -->
+    <div class="bg-gray-50 px-6 py-4 border-t border-gray-200">
+        <?php if ($pager): ?>
+            <?= $pager->links('default', 'tailwind_pagination') ?>
+        <?php endif; ?>
+    </div>
         <?php endif; ?>
 
     </div>
