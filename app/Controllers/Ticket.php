@@ -333,38 +333,30 @@ public function index()
      * Delete ticket (admin only)
      */
     public function delete($id)
-    {
-        $role = $this->session->get('role');
-        
-        // ⭐ Hanya admin yang bisa hapus tiket
-        if ($role !== 'admin') {
-            return redirect()->to('/ticket')
-                           ->with('error', 'Hanya admin yang dapat menghapus tiket');
-        }
-
-        $ticket = $this->ticketModel->find($id);
-
-        if (!$ticket) {
-            return redirect()->to('/ticket')
-                           ->with('error', 'Tiket tidak ditemukan');
-        }
-
-        // ⭐ Cek apakah tiket sudah punya log maintenance
-        $hasLogs = $this->maintenanceLogModel->where('ticket_id', $id)->countAllResults() > 0;
-
-        if ($hasLogs) {
-            return redirect()->to('/ticket')
-                           ->with('error', 'Tiket tidak dapat dihapus karena memiliki log maintenance terkait');
-        }
-
-        if ($this->ticketModel->delete($id)) {
-            return redirect()->to('/ticket')
-                           ->with('success', 'Tiket berhasil dihapus');
-        } else {
-            return redirect()->to('/ticket')
-                           ->with('error', 'Gagal menghapus tiket');
-        }
+{
+    $role = $this->session->get('role');
+    
+    if ($role !== 'admin') {
+        return redirect()->to('/ticket')->with('error', 'Hanya admin yang dapat menghapus tiket');
     }
+
+    $ticket = $this->ticketModel->find($id);
+
+    if (!$ticket) {
+        return redirect()->to('/ticket')->with('error', 'Tiket tidak ditemukan');
+    }
+
+    // --- PERUBAHAN DI SINI ---
+    // Jangan hanya dicek, tapi langsung hapus log terkait agar tidak kena RESTRICT database
+    $this->maintenanceLogModel->where('ticket_id', $id)->delete();
+
+    // Baru hapus tiket utama
+    if ($this->ticketModel->delete($id)) {
+        return redirect()->to('/ticket')->with('success', 'Tiket dan log terkait berhasil dihapus');
+    } else {
+        return redirect()->to('/ticket')->with('error', 'Gagal menghapus tiket');
+    }
+}
 
     /**
      * Get asset details (AJAX)
