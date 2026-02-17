@@ -244,6 +244,7 @@
                                 <td class="px-6 py-4">
                                     <div class="flex items-center justify-center gap-2">
                                         <?php if ($user['role'] === 'admin'): ?>
+                                            <!-- ADMIN: Edit & Delete -->
                                             <a href="<?= base_url('schedule/edit/' . $schedule['schedule_id']) ?>" 
                                                class="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded text-xs font-medium transition-colors"
                                                title="Edit">
@@ -257,8 +258,50 @@
                                                     <i class="fas fa-trash"></i>
                                                 </a>
                                             <?php endif; ?>
-                                        <?php else: ?>
-                                            <span class="text-gray-400 text-xs italic">View Only</span>
+
+                                        <?php elseif ($user['role'] === 'teknisi'): ?>
+                                            <!-- TEKNISI: Update Status based on current status -->
+                                            <?php if ($schedule['status'] === 'scheduled'): ?>
+                                                <!-- Mulai Kerjakan -->
+                                                <form action="<?= base_url('schedule/update-status/' . $schedule['schedule_id']) ?>" method="POST" class="inline">
+                                                    <?= csrf_field() ?>
+                                                    <input type="hidden" name="status" value="in_progress">
+                                                    <button type="submit"
+                                                        class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-xs font-medium transition-colors"
+                                                        onclick="return confirm('Mulai kerjakan jadwal ini?')"
+                                                        title="Mulai Kerjakan">
+                                                        <i class="fas fa-play mr-1"></i> Mulai
+                                                    </button>
+                                                </form>
+
+                                            <?php elseif ($schedule['status'] === 'in_progress'): ?>
+                                                <!-- Tandai Selesai -->
+                                                <form action="<?= base_url('schedule/update-status/' . $schedule['schedule_id']) ?>" method="POST" class="inline">
+                                                    <?= csrf_field() ?>
+                                                    <input type="hidden" name="status" value="completed">
+                                                    <button type="submit"
+                                                        class="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-xs font-medium transition-colors"
+                                                        onclick="return confirm('Tandai jadwal ini sebagai selesai?')"
+                                                        title="Selesai">
+                                                        <i class="fas fa-check mr-1"></i> Selesai
+                                                    </button>
+                                                </form>
+                                                <!-- Input Log Maintenance -->
+                                                <a href="<?= base_url('maintenance/create-from-schedule/' . $schedule['schedule_id']) ?>"
+                                                   class="bg-orange-500 hover:bg-orange-600 text-white px-3 py-1 rounded text-xs font-medium transition-colors"
+                                                   title="Input Log Maintenance">
+                                                    <i class="fas fa-wrench mr-1"></i> Log
+                                                </a>
+
+                                            <?php elseif ($schedule['status'] === 'completed'): ?>
+                                                <!-- Sudah Selesai -->
+                                                <span class="bg-green-100 text-green-700 px-3 py-1 rounded text-xs font-semibold">
+                                                    <i class="fas fa-check-circle mr-1"></i> Selesai
+                                                </span>
+
+                                            <?php else: ?>
+                                                <span class="text-gray-400 text-xs italic">-</span>
+                                            <?php endif; ?>
                                         <?php endif; ?>
                                     </div>
                                 </td>
@@ -271,12 +314,10 @@
 
         <!-- Pagination -->
         <?php if (!empty($schedules)): ?>
-               <!-- Pagination -->
             <div class="bg-gray-50 px-6 py-4 border-t border-gray-200">
                  <?= $pager->links('default', 'tailwind_pagination') ?>
             </div>
         <?php endif; ?>
-    </div>
     </div>
 
 </main>

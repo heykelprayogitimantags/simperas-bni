@@ -197,12 +197,12 @@
         </div>
 
         <!-- Pagination -->
-        <?php if (!empty($logs)): ?>
-            <div class="bg-gray-50 px-6 py-4 border-t border-gray-200">
-                <?= $pager->links('default', 'tailwind_pagination') ?>
-            </div>
-        <?php endif; ?>
-    </div>
+            <?php if (!empty($logs) && isset($pager)): ?>
+        <div class="bg-gray-50 px-6 py-4 border-t border-gray-200">
+            <?= $pager->links('default', 'tailwind_pagination') ?>
+        </div>
+    <?php endif; ?>
+        </div>
 
 </main>
 

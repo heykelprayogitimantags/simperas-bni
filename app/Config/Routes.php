@@ -68,9 +68,11 @@ $routes->group('', ['filter' => 'auth'], function($routes) {
         $routes->post('save/(:num)', 'Maintenance::save/$1');
         $routes->get('history', 'Maintenance::history');
         $routes->get('delete/(:num)', 'Maintenance::delete/$1', ['filter' => 'auth:admin']);
+        $routes->get('create-from-schedule/(:num)', 'Maintenance::createFromSchedule/$1');
+        $routes->post('save-from-schedule/(:num)', 'Maintenance::saveFromSchedule/$1');
     });
 
-    // Schedule (Admin CRUD, Teknisi View)
+    // Schedule (Admin CRUD, Teknisi: View + Update Status)
     $routes->group('schedule', function($routes) {
         $routes->get('/', 'Schedule::index', ['filter' => 'auth:admin,teknisi']);
         $routes->get('calendar', 'Schedule::calendar', ['filter' => 'auth:admin,teknisi']);
@@ -79,6 +81,7 @@ $routes->group('', ['filter' => 'auth'], function($routes) {
         $routes->get('edit/(:num)', 'Schedule::edit/$1', ['filter' => 'auth:admin']);
         $routes->post('update/(:num)', 'Schedule::update/$1', ['filter' => 'auth:admin']);
         $routes->get('delete/(:num)', 'Schedule::delete/$1', ['filter' => 'auth:admin']);
+        $routes->post('update-status/(:num)', 'Schedule::updateStatus/$1', ['filter' => 'auth:admin,teknisi']);
     });
 
     // Report (Admin)
