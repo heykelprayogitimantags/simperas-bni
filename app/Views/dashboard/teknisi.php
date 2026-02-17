@@ -386,28 +386,7 @@
             </div>
         </div>
         
-    </div>
-    
-    <!-- Asset Alerts -->
-    <div class="alert-box bg-gradient-to-r from-orange-50 to-orange-100 border border-orange-200 p-6 mb-8 rounded-2xl shadow-md animate-scale-in" style="animation-delay: 0.5s;">
-        <div class="flex items-center">
-            <div class="flex-shrink-0 w-12 h-12 bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl flex items-center justify-center shadow-lg mr-4">
-                <i class="fas fa-exclamation-circle text-white text-xl"></i>
-            </div>
-            <div class="flex-1">
-                <p class="font-bold text-orange-900 text-lg mb-1">Asset Perlu Perhatian</p>
-                <p class="text-sm text-orange-700 font-medium">
-                    <span class="inline-flex items-center px-3 py-1 rounded-full bg-yellow-100 text-yellow-800 font-bold text-xs mr-2">
-                        <i class="fas fa-wrench mr-1"></i> <?= $assets_need_attention['rusak_ringan'] ?> Rusak Ringan
-                    </span>
-                    <span class="inline-flex items-center px-3 py-1 rounded-full bg-red-100 text-red-800 font-bold text-xs">
-                        <i class="fas fa-exclamation-triangle mr-1"></i> <?= $assets_need_attention['rusak_berat'] ?> Rusak Berat
-                    </span>
-                </p>
-            </div>
-        </div>
-    </div>
-    
+    </div>   
     <!-- Main Content Grid -->
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
