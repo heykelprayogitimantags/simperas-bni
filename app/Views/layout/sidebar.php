@@ -143,17 +143,9 @@
             <div class="mt-6">
                 <div class="flex items-center px-4 mb-3">
                     <div class="h-px flex-1 bg-gray-200"></div>
-                    <p class="text-xs font-bold text-gray-500 uppercase px-3">Referensi</p>
+                    <p class="text-xs font-bold text-gray-500 uppercase px-3">Periksa</p>
                     <div class="h-px flex-1 bg-gray-200"></div>
                 </div>
-                
-                <a href="<?= base_url('asset') ?>" 
-                   class="flex items-center px-4 py-3 mb-2 text-gray-700 hover:bg-gray-50 border-l-4 border-transparent hover:border-gray-500 rounded-r-lg transition-all duration-200 group">
-                    <div class="bg-gray-50 rounded-lg p-2 mr-3 group-hover:bg-gray-100 transition-colors">
-                        <i class="fas fa-database text-gray-500"></i>
-                    </div>
-                    <span class="font-medium">Lihat Asset</span>
-                </a>
                 
                 <a href="<?= base_url('schedule') ?>" 
                    class="flex items-center px-4 py-3 mb-2 text-gray-700 hover:bg-gray-50 border-l-4 border-transparent hover:border-purple-500 rounded-r-lg transition-all duration-200 group">
